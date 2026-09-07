@@ -16,16 +16,15 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-No API keys, no database required.
+No API keys, no database required. The game itself is a single self-contained
+page, `web/index.html`, which also works opened directly in a browser or hosted
+as a static file. `app.py` is a thin Streamlit shell that serves it edge to
+edge, so the deployment path is unchanged.
 
 ## Deploying
 
 Push to a public GitHub repo, then at `share.streamlit.io` create an app
-pointing at `app.py`. For a permanent shared leaderboard, create a public Gist
-containing `leaderboard.json` with `{"version": 1, "entries": []}`, then add
-`GIST_ID` and `GITHUB_TOKEN` under Settings → Secrets. An optional
-`GEMINI_API_KEY` adds generated post-game commentary; without it the game falls
-back to written analysis.
+pointing at `app.py`. Nothing else to configure.
 
 ## The AI
 
@@ -69,125 +68,103 @@ function signature, so the guarantee cannot silently rot.
 
 ## Interface
 
-The board is built from real Streamlit buttons, one per square, so **the board
-itself is the control surface** — you click the square you are looking at. An
-earlier version drew the board as a picture with a separate grid of buttons
-underneath it, which meant looking at one thing and clicking another.
+Everything after the menu runs in the browser. Every tap is resolved locally
+and the AI's reply lands about a second later with its own animation, so the
+game feels like a game rather than a form. An earlier version built each
+board from 100 Streamlit buttons, which meant a server round trip per tap and
+a grid that collapsed into a vertical list on phones.
 
-Cell colour comes from the widget key. Streamlit attaches a `.st-key-<key>`
-class to any keyed widget, so encoding a square's state into its key
-(`cellhit_3_4`, `cellsea_0_0`) lets one CSS rule paint every cell of that state
-at once. See `[class*="st-key-cellhit_"]` in `ui/theme.py`.
+**Graphics.** Ships are drawn as steel hulls that span their cells, with a bow,
+a stern and turrets on the middle sections. The ocean is a shaded tile, the
+frame is brushed steel, the type is a military stencil. Every shot gets an
+effect: a cannon report and a white splash ring for a miss, a flash, fireball
+and smoke burst for a hit, and a red peg that keeps burning on the hull. A
+sunk ship turns into a charred wreck and settles. Your own board shakes when
+you are hit, and phones vibrate.
 
-Your own board is display-only and is drawn as a CSS grid of divs instead: 100
-divs cost far less than 100 widgets, and they can carry the AI's heat map
-underneath the hulls.
+**Sound** is synthesised on the fly with WebAudio, so there are no files to
+load: cannon, splash, explosion, sinking, incoming-shell whistle, fanfare and
+defeat. The speaker button in the top bar or the checkbox on the menu turns it
+off.
 
-### Palette
-
-The first palette failed for a diagnosable reason: hulls were dark teal on dark
-navy, about one tonal step apart, so the board read as one muddy field. The
-current scheme separates every layer by value, and inverts the hulls to be
-*lighter* than the water — a ship is a bright object on a dark sea, as in life.
-Light-on-dark is also easier to sustain over a long session than a
-near-isoluminant scheme.
+**Desktop** shows both boards side by side. **Phones** show one board at a
+time, switched with two tabs; a badge and a toast tell you when the enemy hits
+you while you are looking at the other board.
 
 ## Ship placement
 
 Both modes open on a deployment screen. The fleet arrives placed at random, so
 a player who does not care can just confirm. Anyone who does can clear it and
-place every ship by hand, choosing orientation with **Rotate**.
+place every ship by hand. Legal squares are lit green, illegal ones are dead,
+hovering previews the hull on desktop, and **Rotate** (or the <kbd>R</kbd>
+key) flips the orientation. Undo, Random and Clear are available until you
+confirm.
 
-Illegal squares are **disabled rather than rejected after the click**, so the
-board answers "can this go here?" before you commit. Undo, Random and Clear are
-all available until you confirm.
+## Two-player modes
 
-In two-player mode the room enters a deployment phase once both commanders have
-joined; the battle opens when both have confirmed their fleets.
+**Online rooms.** One player creates a room and gets a four-character code; the
+other joins by entering it, or by opening the app's link with `?game=CODE`
+appended. Both fleets live on the Streamlit server and each browser is only
+ever sent its own board plus what it has discovered, so ship positions never
+reach a browser that should not have them. The seat token is written to the
+URL, so a refresh or a dropped phone connection reclaims the same seat. While
+you are in a room the page is refreshed every two seconds so you see the
+opponent's move without touching anything.
 
-## Mobile
+**Two players, one device.** Each commander deploys in private behind a
+hand-over screen, then the device is passed back and forth after every shot.
 
-Two targeting modes, switchable from the menu:
+## How the page talks to the server
 
-- **Tap the grid** — a 10x10 button grid. Best on desktop.
-- **Coordinate picker** — column, row, fire. Three taps, works at any width.
-
-The second exists because Streamlit's columns can collapse into a vertical
-stack on narrow viewports, which would turn the grid into an unusable 100-item
-list. Rather than guess how a given phone renders it, both are provided.
+`web/index.html` is registered as a bidirectional Streamlit component. The
+server hands it a `state` dict on every render (room status, your board, what
+you have discovered, the leaderboard) and the page reports actions back as its
+value: create, join, ready, fire, leave, finish. Each action carries a nonce,
+because a component's value persists across reruns and would otherwise be
+replayed. The AI game never touches the server at all; only the final score is
+sent, which is how the shared leaderboard and the optional Gemini commentary
+are still produced by the Python side.
 
 ## Architecture
 
 ```
-app.py                   Streamlit UI, screens, session state
-engine/fleet.py          Ships, placement, shot resolution, shot grids
-engine/match.py          Turn order, game state, scoring (vs AI)
-engine/duel.py           Two-player game state, seats, turn ownership
+app.py                   Streamlit host: serves the page as a component, owns
+                         rooms, the shared leaderboard and commentary
+web/index.html           The game: engine, density AI, graphics, sound,
+                         placement, hot-seat and online play
+engine/fleet.py          Ships, placement, shot resolution
+engine/duel.py           Two-player room state (server side)
+engine/match.py          Python reference match state and scoring
+ai/density.py            Python reference probability-density AI
 services/rooms.py        Shared cross-session room store
-ai/density.py            Probability density targeting
 services/leaderboard.py  Storage interface + Gist and local backends
 services/narrator.py     Optional Gemini commentary with fallbacks
-ui/theme.py              Design tokens and CSS
-ui/board.py              Clickable board widgets and the heat map grid
-tests_headless.py        Validation
+legacy_app.py            Previous widget-based UI, kept for reference
+tests_web.mjs            Validation of the browser engine
+tests_headless.py        Validation of the Python engine
 ```
 
-Nothing in `engine/` or `ai/` imports Streamlit.
+The browser engine is a line-for-line port of the Python one, and both test
+suites run the same eleven groups of checks.
 
 ## Testing
 
 ```bash
+node tests_web.mjs
 python tests_headless.py
 ```
 
-Eleven groups: fleet placement legality over 200 seeds, shot resolution and sink
-detection, density model responses to misses and hits, parity behaviour in hunt
-versus target, no duplicate fire, the strength ordering above, match completion
-and scoring, the fairness assertions, per-move latency (about 1 ms), and
-two-player seat claiming, turn ownership, out-of-turn rejection, win and
-forfeit handling, the isolation of each player's shot grid, and manual
-placement legality (overlap, overhang, undo, clear, full hand-placed fleet).
-
-## Two-player mode
-
-A separate mode alongside the AI game. One player creates a room and gets a
-four-character code; the other joins by entering it, or by opening the app's
-link with `?game=CODE` appended.
-
-**How the state is shared.** Streamlit runs every browser session as a thread
-inside one server process. `st.cache_resource` returns the same object to every
-session rather than a copy, so a single dictionary of rooms is visible to both
-players. Every read-modify-write goes through a `threading.Lock`, because those
-sessions are genuinely concurrent.
-
-**How a player sees the opponent's move.** The board sits in an
-`st.fragment(run_every="2s")`, which reruns on a timer without user input. Only
-that fragment redraws, not the whole page. On Streamlit builds without
-fragments the app degrades to a manual refresh button rather than breaking.
-
-**Why the seat token is in the URL.** Each player's seat token is written to the
-address bar as well as session state. A refresh or a dropped mobile connection
-therefore reclaims the same seat instead of locking the player out of their own
-game.
-
-**Hidden information.** Both fleets live on the server and each session is only
-ever rendered its own board plus what it has discovered. Ship positions are
-never sent to a browser that should not have them — which is stronger than a
-peer-to-peer design, where the opponent's board has to be transmitted and the
-client trusted not to look.
-
-### Limitations of two-player mode
-
-- **Rooms are held in memory.** A redeploy, or the free tier putting the app to
-  sleep, ends any game in progress. The UI reports the room as expired and
-  returns you to the menu rather than crashing. The AI game is unaffected.
-- **It assumes a single server process.** If the app were ever scaled to
-  several replicas, two players could land on different ones and never meet.
-  Community Cloud does not do this today.
-- Rooms are pruned after 20 minutes idle or 2 hours total, capped at 200.
-- Anyone with the code can take a free seat, first come. Rooms lock at two.
+Eleven groups each: fleet placement legality over 200 seeds, shot resolution
+and sink detection, density model responses to misses and hits, parity
+behaviour in hunt versus target, no duplicate fire, the strength ordering
+above, match completion and scoring, the fairness assertions, per-move latency
+(well under a millisecond in the browser), two-player turn ownership and win
+handling, and manual placement legality.
 
 ## Known limitations
 
-- Placement is click-to-place rather than drag-and-drop; Streamlit has no
-  drag primitive without a custom component.
+- Rooms are held in memory, so a redeploy or the free tier sleeping ends any
+  online game in progress. The AI game and hot-seat mode are unaffected.
+- Online play assumes a single server process, which is what Community Cloud
+  provides today.
+- Placement is tap-to-place rather than drag-and-drop.

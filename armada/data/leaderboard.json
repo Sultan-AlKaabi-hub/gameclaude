@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "username": "Sultan",
+      "score": 3075,
+      "wave": 5,
+      "difficulty": "OFFICER",
+      "nodes": 17,
+      "turns": 49,
+      "stealth": 0.35,
+      "at": "2026-09-07T10:11:39+00:00"
+    }
+  ]
+}

@@ -70,37 +70,32 @@ def _generate(prompt: str, max_tokens: int = 140):
 
 
 _WIN_FALLBACKS = [
-    "You found the line before it did. It searched deeper than you and still "
-    "came second, which means your plan was better than its arithmetic.",
-    "Clean win. You built a double threat it could not answer from one move.",
+    "Clean sweep. You walked every hull the moment you found it, and its search "
+    "never got traction on your layout.",
+    "Enemy fleet on the bottom. Hunting on the checkerboard and finishing each "
+    "ship before moving on is exactly what wins these.",
 ]
 _LOSS_FALLBACKS = [
-    "It saw the fork coming several moves before you played into it. Watch for "
-    "positions where you have two separate threats — that is what it builds.",
-    "Lost to a forced sequence. Next time, check what your move lets it play, "
-    "not only what it gives you.",
-]
-_DRAW_FALLBACKS = [
-    "A draw against a full search is a genuine result. Neither side left a gap.",
+    "It found your hulls faster than you found its. When you land a hit, walk "
+    "the line along both axes before you go hunting elsewhere.",
+    "Lost on efficiency. Every ship is at least two long, so shots off the "
+    "checkerboard are wasted while you are still searching.",
 ]
 
 
-def commentary(outcome: str, difficulty: str, moves: int, streak: int, verdict: str) -> str:
-    """One or two lines on the finished board."""
+def commentary(outcome: str, difficulty: str, shots: int, accuracy: int, reason: str) -> str:
+    """One or two lines on the finished game."""
     prompt = (
-        "You are a terse chess-style commentator for a Connect Four game where the "
-        "opponent is a minimax engine with alpha-beta pruning.\n"
-        f"Result: the human {outcome}. Difficulty {difficulty}. The board lasted "
-        f"{moves} moves. The human's current win streak is {streak}. "
-        f"The engine's own read on the final position was: {verdict}\n"
+        "You are a terse naval commentator for a game of Battleship where the "
+        "opponent is an AI that fires at the square covered by the most fleet "
+        "layouts still consistent with its shots. "
+        f"Result: the human {outcome}. Difficulty {difficulty}. The human fired "
+        f"{shots} shots at {accuracy}% accuracy; a perfect game is 17 shots. "
+        f"The AI's last stated reasoning was: {reason}. "
         "Write two sentences: one on what happened, one specific piece of advice. "
         "Dry and analytical, never patronising. No markdown, no preamble."
     )
     text = _generate(prompt)
     if text:
         return text
-    if outcome == "won":
-        return random.choice(_WIN_FALLBACKS)
-    if outcome == "drew":
-        return random.choice(_DRAW_FALLBACKS)
-    return random.choice(_LOSS_FALLBACKS)
+    return random.choice(_WIN_FALLBACKS if outcome == "won" else _LOSS_FALLBACKS)

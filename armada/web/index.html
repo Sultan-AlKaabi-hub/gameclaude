@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E141B">
+<meta name="color-scheme" content="dark">
+<title>ARMADA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E141B; --steel:#1D2833; --steel2:#27343F; --steel3:#34424E; --rule:#43535F; --edge:#5B6B78;
+  --text:#F2F4F6; --dim:#AEBBC7; --brass:#E0B458; --brass2:#F5D27A; --brass-ink:#241A05;
+  --fire:#FF6A00; --fire2:#FFC107; --red:#E53935; --green:#43D17A; --sky:#7EC8FF;
+  --sea1:#1F7FB8; --sea2:#0E4E7C; --sea-own1:#186A9C; --sea-own2:#0A3E66;
+  --hull1:#C4CDD4; --hull2:#7F8B94; --hull3:#525D66;
+  --r:8px;
+  --font-display:"Black Ops One","Impact","Arial Black",sans-serif;
+  --font-body:"Rajdhani","Segoe UI",Roboto,system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:17px;line-height:1.4;-webkit-text-size-adjust:100%}
+body{min-height:100vh;
+  background-image:radial-gradient(ellipse at 50% -10%,rgba(224,180,88,.10),transparent 55%),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.015) 0 2px,transparent 2px 8px);
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#app{max-width:1080px;margin:0 auto;padding:12px 12px 40px}
+@media(max-width:420px){#app{padding:8px 6px 32px}.board{gap:2px;grid-template-columns:16px repeat(10,1fr)}}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;border:0;background:none;padding:0;margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4em;min-height:48px;padding:0 16px;border-radius:var(--r);
+  border:1px solid var(--edge);background:linear-gradient(#34424E,#222E38);color:var(--text);font-weight:700;font-size:17px;
+  letter-spacing:.08em;text-transform:uppercase;width:100%;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.5);
+  transition:filter .1s,transform .06s;white-space:nowrap}
+.btn:hover{filter:brightness(1.18)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(#F5D27A,#D9A63E);color:var(--brass-ink);border-color:#8E6A1C;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.btn.sm{min-height:40px;padding:0 10px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none}
+.btn:focus-visible,.cell:focus-visible,input:focus-visible{outline:3px solid var(--brass2);outline-offset:2px}
+.row{display:flex;gap:8px;margin:8px 0}
+.row>*{flex:1;min-width:0}
+.panel{background:linear-gradient(var(--steel2),var(--steel));border:1px solid var(--rule);border-radius:var(--r);padding:12px 14px;margin:0 0 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.panel.tight{padding:10px 12px}
+.title{font-family:var(--font-display);font-size:clamp(40px,10vw,68px);letter-spacing:.12em;margin:0;text-align:center;line-height:1;font-weight:400;
+  background:linear-gradient(#FFF0C2,#E0B458 55%,#9C7429);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 0 #3A2A08) drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.sub{color:var(--dim);text-align:center;margin:8px auto 14px;max-width:560px;font-size:16px}
+.lbl{display:block;font-size:13px;color:var(--brass);letter-spacing:.16em;text-transform:uppercase;margin:12px 0 6px;font-weight:700}
+input[type=text]{width:100%;min-height:48px;padding:0 12px;border-radius:var(--r);border:1px solid var(--edge);
+  background:#0F171F;color:var(--text);font-size:18px;font-family:var(--font-body);font-weight:600;letter-spacing:.04em}
+input[type=text]::placeholder{color:#6F8090;font-weight:500}
+.seg3{display:flex;gap:6px}
+.seg3 .btn{min-height:44px;padding:0 6px;font-size:15px}
+.seg3 .btn.on{background:linear-gradient(#F5D27A,#D9A63E);color:var(--brass-ink);border-color:#8E6A1C}
+.hint{color:var(--dim);font-size:15px;margin:6px 0 0}
+.two{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){.two{grid-template-columns:3fr 2fr;gap:28px}}
+details{background:var(--steel);border:1px solid var(--rule);border-radius:var(--r);padding:10px 14px;margin:10px 0}
+summary{cursor:pointer;font-weight:700;color:var(--text);letter-spacing:.04em}
+details p,details li{color:var(--dim);font-size:15px}
+details strong{color:var(--text)}
+.hero{display:block;width:min(100%,520px);height:auto;margin:6px auto 0}
+
+/* ---------- boards ---------- */
+.boards{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.pane h3{margin:0 0 8px;font-family:var(--font-display);font-size:15px;letter-spacing:.16em;color:var(--brass);font-weight:400;text-align:center}
+.tabs{display:none;gap:6px;margin:0 0 10px}
+.tabs .btn{min-height:44px;font-size:14px;position:relative}
+.tabs .btn.on{background:linear-gradient(#F5D27A,#D9A63E);color:var(--brass-ink);border-color:#8E6A1C}
+.tabs .badge{position:absolute;top:-7px;right:-4px;background:var(--red);color:#fff;font-size:12px;min-width:22px;height:22px;
+  border-radius:11px;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 0 0 2px var(--bg)}
+@media(max-width:859px){.tabs{display:flex}.boards{grid-template-columns:1fr}.pane:not(.active){display:none}.pane h3{display:none}}
+.frame{background:linear-gradient(#3A4854,#222D37);border:2px solid #56646F;border-radius:10px;padding:8px 8px 8px 4px;max-width:490px;margin:0 auto;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 8px 24px rgba(0,0,0,.55)}
+.board{display:grid;grid-template-columns:20px repeat(10,1fr);gap:3px;width:100%;user-select:none;-webkit-user-select:none;position:relative}
+.board.locked .cell{pointer-events:none}
+.board.quake{animation:quake .45s}
+@keyframes quake{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+.ax{font-family:var(--font-display);font-size:12px;color:var(--brass);display:flex;align-items:center;justify-content:center}
+.cell{aspect-ratio:1/1;border-radius:4px;border:1px solid rgba(0,0,0,.45);position:relative;overflow:visible;width:100%;padding:0;
+  background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.14),transparent 45%),linear-gradient(160deg,var(--sea1),var(--sea2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),inset 0 -2px 3px rgba(0,0,0,.35)}
+.cell.own{background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.10),transparent 45%),linear-gradient(160deg,var(--sea-own1),var(--sea-own2))}
+.cell.sea:not(:disabled){cursor:crosshair}
+.cell.sea:not(:disabled):hover{filter:brightness(1.3)}
+.cell.sea:not(:disabled):hover::after{content:"";position:absolute;inset:18%;border:2px solid var(--brass2);border-radius:50%;
+  box-shadow:0 0 6px var(--brass2);background:radial-gradient(circle,var(--brass2) 0 12%,transparent 14%)}
+.cell.ok{background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.14),transparent 45%),linear-gradient(160deg,#2BA36F,#166A44);cursor:pointer}
+.cell.ok:hover{filter:brightness(1.25)}
+.cell.bad{background:linear-gradient(160deg,#173650,#0C2A44);filter:saturate(.6) brightness(.8);cursor:default}
+.cell.last{z-index:2;box-shadow:0 0 0 2px var(--brass2),0 0 12px rgba(245,210,122,.8)}
+.cell.heat{border-color:rgba(255,255,255,.18)}
+.cell[disabled]{cursor:default}
+.cell.sea[disabled]{cursor:not-allowed}
+.peg{position:absolute;width:40%;height:40%;left:30%;top:30%;border-radius:50%;z-index:3;pointer-events:none}
+.peg.red{background:radial-gradient(circle at 35% 35%,#FF9E93,#E11B0E 55%,#6E0600);box-shadow:0 0 8px #FF3D00,0 2px 3px rgba(0,0,0,.6)}
+.peg.white{background:radial-gradient(circle at 35% 35%,#FFFFFF,#D8E2EA 55%,#8FA3B2);box-shadow:0 2px 3px rgba(0,0,0,.6)}
+.seg{position:absolute;z-index:1;pointer-events:none;background:linear-gradient(var(--hull1),var(--hull2) 55%,var(--hull3));
+  box-shadow:inset 0 1px 0 #E8EEF2,inset 0 -1px 0 #3A444C,0 3px 4px rgba(0,0,0,.55)}
+.seg.h{top:16%;bottom:16%;left:-2px;right:-2px}
+.seg.v{left:16%;right:16%;top:-2px;bottom:-2px}
+.seg.h.bow{right:4%;border-radius:0 100% 100% 0/0 50% 50% 0}
+.seg.h.stern{left:5%;border-radius:35% 0 0 35%/50% 0 0 50%}
+.seg.v.bow{top:4%;border-radius:100% 100% 0 0/50% 50% 0 0}
+.seg.v.stern{bottom:5%;border-radius:0 0 35% 35%/0 0 50% 50%}
+.seg.mid::after{content:"";position:absolute;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,#8C979F,#3C464E 70%);box-shadow:0 0 0 2px #2A3238,0 1px 2px rgba(0,0,0,.6)}
+.seg.h.mid::before{content:"";position:absolute;left:50%;top:50%;width:60%;height:12%;transform:translate(-50%,-50%);background:#2A3238;border-radius:2px}
+.seg.v.mid::before{content:"";position:absolute;left:50%;top:50%;width:12%;height:60%;transform:translate(-50%,-50%);background:#2A3238;border-radius:2px}
+.seg.ghost{opacity:.6;outline:2px dashed var(--brass2);outline-offset:-2px}
+.seg.charred{background:linear-gradient(#4A4F53,#2B3034 55%,#15181B)}
+.seg.charred.mid::after{background:radial-gradient(circle at 40% 40%,#3B4246,#141719 70%)}
+.cell.damage .seg{filter:brightness(.75) sepia(.5) saturate(2) hue-rotate(-25deg)}
+.fire{position:absolute;left:15%;right:15%;top:0;bottom:25%;z-index:4;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,#FFF59D 0%,#FFB300 25%,#FF5722 50%,rgba(255,0,0,0) 75%);
+  filter:blur(1px);mix-blend-mode:screen;animation:flicker .45s infinite alternate;transform-origin:50% 100%}
+.fire.small{left:30%;right:30%;top:25%;opacity:.85}
+@keyframes flicker{0%{transform:scaleY(.9) scaleX(1);opacity:.85}50%{transform:scaleY(1.15) scaleX(.9);opacity:1}100%{transform:scaleY(1) scaleX(1.05);opacity:.9}}
+.fx{position:absolute;inset:0;pointer-events:none;z-index:6}
+.boom .flash{position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,#FFFFFF 0%,#FFE082 18%,#FF6D00 45%,rgba(255,60,0,0) 70%);animation:flash .5s ease-out forwards}
+@keyframes flash{0%{transform:scale(.15);opacity:1}60%{opacity:.95}100%{transform:scale(1.5);opacity:0}}
+.boom .smoke{position:absolute;inset:-10%;border-radius:50%;background:radial-gradient(circle,rgba(70,70,70,.95),rgba(30,30,30,0) 70%);animation:smoke 1s ease-out forwards}
+@keyframes smoke{0%{transform:scale(.3) translateY(0);opacity:.95}100%{transform:scale(2.4) translateY(-45%);opacity:0}}
+.boom .p{position:absolute;left:44%;top:44%;width:12%;height:12%;border-radius:50%;background:#FFC107;box-shadow:0 0 6px #FF6D00;animation:spark .65s ease-out forwards}
+@keyframes spark{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+.splash .ring{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.95);border-radius:50%;animation:ring .6s ease-out forwards}
+.splash .ring2{position:absolute;inset:30%;border:2px solid rgba(190,230,255,.9);border-radius:50%;animation:ring .7s .1s ease-out forwards;opacity:0}
+@keyframes ring{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.1);opacity:0}}
+.splash .p{position:absolute;left:44%;top:44%;width:11%;height:11%;border-radius:50%;background:#E3F4FF;animation:spark .55s ease-out forwards}
+.cell.shake{animation:cshake .35s}
+@keyframes cshake{0%,100%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.92)}}
+.sink .seg{animation:sink 1.2s ease-in forwards}
+@keyframes sink{0%{transform:translateY(0);opacity:1}100%{transform:translateY(35%) rotate(3deg);opacity:.55}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 10px}
+.stat{background:linear-gradient(var(--steel2),var(--steel));border:1px solid var(--rule);border-radius:var(--r);padding:6px 4px;text-align:center}
+.stat .l{font-size:11px;letter-spacing:.14em;color:var(--brass);text-transform:uppercase;font-weight:700}
+.stat .v{font-family:var(--font-display);font-size:22px;line-height:1.2}
+.status{font-size:18px;font-weight:700;min-height:26px;text-align:center;margin:6px 0 10px;letter-spacing:.03em}
+.status.you{color:var(--brass2)} .status.them{color:var(--dim)} .status.bad{color:#FF8A80} .status.good{color:var(--green)}
+.pips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 4px;font-size:13px;font-weight:700;letter-spacing:.04em}
+.pip{border:1px solid;border-radius:5px;padding:2px 8px;text-transform:uppercase}
+.pip.ok{color:var(--hull1);border-color:#6E7B85;background:rgba(255,255,255,.04)}
+.pip.dmg{color:var(--fire2);border-color:var(--fire)}
+.pip.sunk{color:#FF8A80;border-color:var(--red);text-decoration:line-through;opacity:.8}
+.pip.unk{color:var(--dim);border-color:var(--rule)}
+.log{font-size:14px;color:var(--dim);margin:12px 0 0;font-weight:600}
+.log div{border-left:3px solid var(--rule);padding:2px 0 2px 10px;margin:3px 0}
+.log div:last-child{color:var(--text);border-color:var(--brass)}
+.legend{display:flex;align-items:center;gap:8px;justify-content:center;font-size:13px;color:var(--dim);margin:8px 0 0}
+.legend .bar{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,#0A3E66,#1E5A8A,#2BB3A3,#F4B942,#FFF1B8)}
+.check{display:flex;align-items:center;gap:10px;font-size:16px;margin:10px 0;cursor:pointer;user-select:none;font-weight:600}
+.check input{width:20px;height:20px;accent-color:var(--brass);margin:0}
+.reason{font-size:15px;color:var(--text);margin:4px 0;font-weight:600}
+.reason small{display:block;color:var(--dim);font-size:13px;margin-top:4px;line-height:1.6;font-weight:500}
+.reason b{color:var(--brass2)}
+.lb{font-size:15px;font-weight:600}
+.lb .rw{display:flex;align-items:baseline;gap:8px;padding:6px 6px;border-bottom:1px solid var(--rule)}
+.lb .rw.me{background:rgba(224,180,88,.14);border-radius:4px}
+.lb .rk{color:var(--brass);width:2.2em;font-family:var(--font-display);font-size:13px}
+.lb .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .df{color:var(--dim);font-size:12px}
+.lb .sc{color:var(--brass2);font-family:var(--font-display);font-size:14px}
+.big{font-family:var(--font-display);font-size:48px;color:var(--brass2);text-align:center;line-height:1.1;margin:4px 0;text-shadow:0 3px 0 #3A2A08}
+.banner{background:linear-gradient(100deg,var(--steel2) 0%,#3C3418 100%);border:1px solid #8E6A1C;border-left:5px solid var(--brass);border-radius:var(--r);padding:10px 14px;margin:0 0 12px}
+.banner .role{color:var(--brass);font-size:12px;letter-spacing:.2em;font-weight:700}
+.banner .nm{font-size:24px;font-weight:700}
+.banner .meta{color:var(--dim);font-size:14px;font-weight:600}
+.brk .rw{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);font-size:16px;font-weight:600}
+.brk .rw span:last-child{color:var(--brass2);font-family:var(--font-display);font-size:15px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.top .btn{width:auto;min-height:38px;padding:0 12px;font-size:13px}
+.top .name{font-family:var(--font-display);letter-spacing:.14em;font-size:18px;color:var(--brass2)}
+.code{font-family:var(--font-display);font-size:44px;letter-spacing:.3em;text-align:center;color:var(--brass2);text-shadow:0 3px 0 #3A2A08;margin:4px 0}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:#151E27;color:var(--text);border:2px solid var(--brass);border-radius:10px;padding:10px 18px;font-weight:700;letter-spacing:.04em;
+  font-size:17px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:50;max-width:92vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{border-color:var(--red)} #toast.good{border-color:var(--green)}
+.overlay{position:fixed;inset:0;background:rgba(8,12,17,.97);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}
+.overlay .box{max-width:440px;width:100%;text-align:center}
+.overlay .box .who{font-family:var(--font-display);font-size:36px;letter-spacing:.08em;margin:8px 0 4px;color:var(--brass2)}
+.overlay .box p{color:var(--dim);margin:6px 0 18px;font-size:16px}
+.result{text-align:center;font-family:var(--font-display);font-size:clamp(34px,9vw,58px);letter-spacing:.12em;margin:6px 0 4px;line-height:1.05;font-weight:400}
+.result.win{color:var(--brass2);text-shadow:0 3px 0 #3A2A08,0 0 30px rgba(245,210,122,.5)} .result.loss{color:#FF6E62;text-shadow:0 3px 0 #4A0F0A}
+.kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--steel2);border:1px solid var(--rule);border-radius:4px;padding:0 5px;font-size:12px}
+.wait{display:flex;align-items:center;gap:10px;justify-content:center;color:var(--dim);font-weight:600}
+.wait i{width:14px;height:14px;border:3px solid var(--brass);border-right-color:transparent;border-radius:50%;animation:spin .9s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.radar{width:120px;height:120px;border-radius:50%;margin:10px auto;position:relative;border:2px solid var(--green);overflow:hidden;
+  background:radial-gradient(circle,rgba(67,209,122,.15),transparent 70%),repeating-radial-gradient(circle,transparent 0 24px,rgba(67,209,122,.35) 24px 25px)}
+.radar::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(67,209,122,.6),transparent 60deg);animation:spin 2s linear infinite}
+</style>
+</head>
+<body>
+<div id="app" role="main"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+/*ENGINE-START*/
+const SIZE = 10;
+const SHIP_TYPES = [["Carrier", 5], ["Battleship", 4], ["Cruiser", 3], ["Submarine", 3], ["Destroyer", 2]];
+const TOTAL_CELLS = 17;
+const UNKNOWN = 0, MISS = 1, HIT = 2, SUNK = 3;
+const COLS = "ABCDEFGHIJ".split("");
+const label = (r, c) => COLS[c] + (r + 1);
+const key = (r, c) => r * SIZE + c;
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+class RNG {
+  constructor(seed) { this.next = mulberry32((seed >>> 0) || 1); }
+  random() { return this.next(); }
+  int(n) { return Math.floor(this.next() * n); }
+  pick(a) { return a[this.int(a.length)]; }
+}
+
+class Ship {
+  constructor(name, length, cells) { this.name = name; this.length = length; this.cells = cells; this.hits = new Set(); }
+  get sunk() { return this.hits.size >= this.length; }
+  get horizontal() { return this.cells.length > 1 && this.cells[0][0] === this.cells[1][0]; }
+}
+
+class Fleet {
+  constructor() { this.clear(); }
+  clear() { this.ships = []; this.grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(-1)); }
+  placeRandom(rng) {
+    for (let a = 0; a < 200; a++) {
+      this.clear();
+      let ok = true;
+      for (const [n, l] of SHIP_TYPES) { if (!this._placeOne(n, l, rng)) { ok = false; break; } }
+      if (ok) return;
+    }
+    throw new Error("could not place fleet");
+  }
+  _placeOne(name, length, rng) {
+    for (let i = 0; i < 400; i++) {
+      const h = rng.random() < 0.5;
+      const r = h ? rng.int(SIZE) : rng.int(SIZE - length + 1);
+      const c = h ? rng.int(SIZE - length + 1) : rng.int(SIZE);
+      if (this.place(name, length, r, c, h)) return true;
+    }
+    return false;
+  }
+  footprint(length, r, c, h) { const out = []; for (let i = 0; i < length; i++) out.push([r + (h ? 0 : i), c + (h ? i : 0)]); return out; }
+  canPlace(length, r, c, h) {
+    for (const [rr, cc] of this.footprint(length, r, c, h)) {
+      if (rr < 0 || rr >= SIZE || cc < 0 || cc >= SIZE) return false;
+      if (this.grid[rr][cc] !== -1) return false;
+    }
+    return true;
+  }
+  place(name, length, r, c, h) {
+    if (!this.canPlace(length, r, c, h)) return false;
+    const cells = this.footprint(length, r, c, h);
+    const idx = this.ships.length;
+    this.ships.push(new Ship(name, length, cells));
+    for (const [rr, cc] of cells) this.grid[rr][cc] = idx;
+    return true;
+  }
+  removeLast() {
+    if (!this.ships.length) return false;
+    const s = this.ships.pop();
+    for (const [r, c] of s.cells) this.grid[r][c] = -1;
+    return true;
+  }
+  isComplete() { return this.ships.length === SHIP_TYPES.length; }
+  nextToPlace() { return this.isComplete() ? null : SHIP_TYPES[this.ships.length]; }
+  validCells(length, h) {
+    const s = new Set();
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (this.canPlace(length, r, c, h)) s.add(key(r, c));
+    return s;
+  }
+  shipAt(r, c) { const i = this.grid[r][c]; return i === -1 ? null : this.ships[i]; }
+  receive(r, c) {
+    const i = this.grid[r][c];
+    if (i === -1) return { outcome: "miss", ship: null };
+    const s = this.ships[i];
+    s.hits.add(key(r, c));
+    return s.sunk ? { outcome: "sunk", ship: s } : { outcome: "hit", ship: null };
+  }
+  allSunk() { return this.ships.length > 0 && this.ships.every(s => s.sunk); }
+  remainingLengths() { return this.ships.filter(s => !s.sunk).map(s => s.length); }
+  cellsRemaining() { return this.ships.reduce((a, s) => a + s.length - s.hits.size, 0); }
+  shipsLeft() { return this.ships.filter(s => !s.sunk).length; }
+}
+
+class ShotGrid {
+  constructor() {
+    this.state = Array.from({ length: SIZE }, () => Array(SIZE).fill(UNKNOWN));
+    this.shots = 0; this.hits = 0; this.sunkNames = [];
+  }
+  alreadyFired(r, c) { return this.state[r][c] !== UNKNOWN; }
+  record(r, c, outcome, ship) {
+    this.shots++;
+    if (outcome === "miss") { this.state[r][c] = MISS; return; }
+    this.hits++;
+    this.state[r][c] = HIT;
+    if (outcome === "sunk" && ship) {
+      for (const [rr, cc] of ship.cells) this.state[rr][cc] = SUNK;
+      this.sunkNames.push(ship.name);
+    }
+  }
+  unresolvedHits() {
+    const o = [];
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (this.state[r][c] === HIT) o.push([r, c]);
+    return o;
+  }
+  get accuracy() { return this.shots ? this.hits / this.shots : 0; }
+}
+
+const HIT_WEIGHT = 60;
+const DIFFICULTIES = {
+  CADET:   { mode: "random",  mult: 0.5, blurb: "Fires blind. It has no idea where you are." },
+  OFFICER: { mode: "hunt",    mult: 1.0, blurb: "Random search, then works outward from any hit." },
+  ADMIRAL: { mode: "density", mult: 2.0, blurb: "Counts every fleet layout still possible and fires where the most overlap." },
+};
+
+class AI {
+  constructor(difficulty, rng) {
+    this.difficulty = difficulty;
+    this.mode = (DIFFICULTIES[difficulty] || DIFFICULTIES.ADMIRAL).mode;
+    this.rng = rng; this.lastDensity = null; this.lastReason = ""; this.lastPlacements = 0;
+  }
+  densityMap(grid, lengths) {
+    const d = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    const live = new Set(grid.unresolvedHits().map(([r, c]) => key(r, c)));
+    let placements = 0;
+    for (const L of lengths) {
+      for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) for (const [dr, dc] of [[0, 1], [1, 0]]) {
+        if (r + dr * (L - 1) >= SIZE || c + dc * (L - 1) >= SIZE) continue;
+        let ok = true, covered = 0;
+        for (let i = 0; i < L; i++) {
+          const rr = r + dr * i, cc = c + dc * i, s = grid.state[rr][cc];
+          if (s === MISS || s === SUNK) { ok = false; break; }
+          if (live.has(key(rr, cc))) covered++;
+        }
+        if (!ok) continue;
+        placements++;
+        const w = 1 + HIT_WEIGHT * covered;
+        for (let i = 0; i < L; i++) {
+          const rr = r + dr * i, cc = c + dc * i;
+          if (grid.state[rr][cc] === UNKNOWN) d[rr][cc] += w;
+        }
+      }
+    }
+    return { density: d, placements };
+  }
+  choose(grid, lengths) {
+    const options = [];
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (grid.state[r][c] === UNKNOWN) options.push([r, c]);
+    if (!options.length) return [0, 0];
+    if (this.mode === "random") { this.lastDensity = null; this.lastReason = "Firing at random."; return this.rng.pick(options); }
+    if (this.mode === "hunt") {
+      this.lastDensity = null;
+      const live = grid.unresolvedHits();
+      if (live.length) {
+        const nb = [];
+        for (const [r, c] of live) for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && grid.state[nr][nc] === UNKNOWN) nb.push([nr, nc]);
+        }
+        if (nb.length) { this.lastReason = "Working outward from a hit."; return this.rng.pick(nb); }
+      }
+      this.lastReason = "Searching at random.";
+      return this.rng.pick(options);
+    }
+    const { density, placements } = this.densityMap(grid, lengths);
+    this.lastDensity = density; this.lastPlacements = placements;
+    const live = grid.unresolvedHits();
+    let cands = options; this.lastReason = "";
+    if (!live.length && lengths.length) {
+      const step = Math.min(...lengths);
+      if (step > 1) {
+        const lat = options.filter(([r, c]) => (r + c) % step === 0);
+        if (lat.length) { cands = lat; this.lastReason = `Hunting on a ${step}-square lattice. No ship of length ${step} can hide between the gaps.`; }
+      }
+    }
+    if (live.length) this.lastReason = `Tracking damage at ${live.length} square${live.length !== 1 ? "s" : ""}. The consistent layouts collapse around it.`;
+    else if (!this.lastReason) this.lastReason = "No contact. Firing where most layouts overlap.";
+    let best = cands[0], bv = -1;
+    for (const cell of cands) { const v = density[cell[0]][cell[1]]; if (v > bv) { bv = v; best = cell; } }
+    if (bv <= 0) return this.rng.pick(options);
+    return best;
+  }
+  confidence() {
+    if (!this.lastDensity) return 0;
+    let tot = 0, mx = 0;
+    for (const row of this.lastDensity) for (const v of row) { tot += v; if (v > mx) mx = v; }
+    return tot > 0 ? mx / tot : 0;
+  }
+}
+
+const WIN_POINTS = 1500, PERFECT = TOTAL_CELLS, EFF_POINTS = 25, SURV_POINTS = 60;
+
+class Match {
+  constructor(difficulty, seed) {
+    this.difficulty = difficulty; this.rng = new RNG(seed);
+    this.playerFleet = new Fleet(); this.aiFleet = new Fleet();
+    this.playerFleet.placeRandom(this.rng); this.aiFleet.placeRandom(this.rng);
+    this.playerShots = new ShotGrid(); this.aiShots = new ShotGrid();
+    this.ai = new AI(difficulty, this.rng);
+    this.status = "playing"; this.log = ["Fleets deployed. Open fire."];
+    this.lastAiShot = null; this.lastPlayerShot = null;
+  }
+  playerFire(r, c) {
+    if (this.status !== "playing" || this.playerShots.alreadyFired(r, c)) return null;
+    const { outcome, ship } = this.aiFleet.receive(r, c);
+    this.playerShots.record(r, c, outcome, ship);
+    this.lastPlayerShot = [r, c];
+    if (outcome === "sunk") this.log.push(`You sank their ${ship.name} at ${label(r, c)}.`);
+    else if (outcome === "hit") this.log.push(`Hit at ${label(r, c)}.`);
+    else this.log.push(`Miss at ${label(r, c)}.`);
+    if (this.aiFleet.allSunk()) { this.status = "won"; this.log.push("Enemy fleet destroyed."); }
+    this.log = this.log.slice(-6);
+    return { outcome, ship };
+  }
+  aiFire() {
+    if (this.status !== "playing") return null;
+    const [r, c] = this.ai.choose(this.aiShots, this.playerFleet.remainingLengths());
+    const { outcome, ship } = this.playerFleet.receive(r, c);
+    this.aiShots.record(r, c, outcome, ship);
+    this.lastAiShot = [r, c];
+    if (outcome === "sunk") this.log.push(`They sank your ${ship.name} at ${label(r, c)}.`);
+    else if (outcome === "hit") this.log.push(`They hit your ${this.playerFleet.shipAt(r, c).name} at ${label(r, c)}.`);
+    else this.log.push(`They missed at ${label(r, c)}.`);
+    if (this.playerFleet.allSunk()) { this.status = "lost"; this.log.push("Your fleet is gone."); }
+    this.log = this.log.slice(-6);
+    return { r, c, outcome, ship };
+  }
+  mult() { return (DIFFICULTIES[this.difficulty] || DIFFICULTIES.ADMIRAL).mult; }
+  score() {
+    const m = this.mult();
+    if (this.status === "won") {
+      const wasted = Math.max(0, this.playerShots.shots - PERFECT);
+      const eff = Math.max(0, 100 - PERFECT - wasted) * EFF_POINTS;
+      const surv = this.playerFleet.cellsRemaining() * SURV_POINTS;
+      return Math.floor((WIN_POINTS + eff + surv) * m);
+    }
+    return Math.floor((this.playerShots.sunkNames.length * 150 + this.playerShots.hits * 25) * m);
+  }
+  breakdown() {
+    const rows = [];
+    if (this.status === "won") {
+      const wasted = Math.max(0, this.playerShots.shots - PERFECT);
+      rows.push(["Victory", WIN_POINTS]);
+      rows.push([`Efficiency (${this.playerShots.shots} shots, ${wasted} wasted)`, Math.max(0, 100 - PERFECT - wasted) * EFF_POINTS]);
+      rows.push([`Fleet surviving (${this.playerFleet.cellsRemaining()} cells)`, this.playerFleet.cellsRemaining() * SURV_POINTS]);
+    } else {
+      rows.push([`Ships sunk (${this.playerShots.sunkNames.length})`, this.playerShots.sunkNames.length * 150]);
+      rows.push([`Hits landed (${this.playerShots.hits})`, this.playerShots.hits * 25]);
+    }
+    rows.push([`${this.difficulty} multiplier`, "×" + this.mult()]);
+    return rows;
+  }
+}
+
+class Duel {
+  constructor(names, seed) {
+    this.names = names; const rng = new RNG(seed);
+    this.fleets = [new Fleet(), new Fleet()];
+    this.fleets[0].placeRandom(rng); this.fleets[1].placeRandom(rng);
+    this.shots = [new ShotGrid(), new ShotGrid()];
+    this.turn = 0; this.status = "playing"; this.winner = null; this.log = ["Fleets deployed."]; this.last = [null, null];
+  }
+  canFire(seat) { return this.status === "playing" && this.turn === seat; }
+  fire(seat, r, c) {
+    if (!this.canFire(seat) || this.shots[seat].alreadyFired(r, c)) return null;
+    const target = this.fleets[1 - seat];
+    const { outcome, ship } = target.receive(r, c);
+    this.shots[seat].record(r, c, outcome, ship);
+    this.last[seat] = [r, c];
+    const who = this.names[seat];
+    if (outcome === "sunk") this.log.push(`${who} sank a ${ship.name} at ${label(r, c)}.`);
+    else if (outcome === "hit") this.log.push(`${who} hit at ${label(r, c)}.`);
+    else this.log.push(`${who} missed at ${label(r, c)}.`);
+    if (target.allSunk()) { this.status = "finished"; this.winner = seat; this.log.push(`${who} wins.`); }
+    else this.turn = 1 - seat;
+    this.log = this.log.slice(-6);
+    return { outcome, ship };
+  }
+}
+/*ENGINE-END*/
+
+// ------------------------------------------------------------------ storage
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("armada." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("armada." + k, JSON.stringify(v)); } catch (e) {} },
+};
+
+const S = {
+  screen: "menu",
+  name: store.get("name", ""), name2: store.get("name2", ""),
+  difficulty: store.get("diff", "ADMIRAL"),
+  showHeat: store.get("heat", true), sound: store.get("sound", true),
+  match: null, duel: null, seat: 0,
+  orientH: true, tab: "enemy", busy: false, ghost: null, badge: 0,
+  recordedRank: null, commentary: "", pendingJoin: "",
+  host: false, view: null, nonce: 0, lb: null, durable: false,
+  oFleet: null, oPrev: null, oSent: false, serverResult: null,
+};
+
+// ------------------------------------------------------------------ Streamlit bridge
+const PAGE_ID = Math.random().toString(36).slice(2, 8);
+const host = {
+  ready() { try { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*"); } catch (e) {} },
+  send(action, data) {
+    if (!S.host) return false;
+    // The nonce carries a per-page-load prefix: Streamlit remounts the iframe
+    // when the component moves in or out of a fragment, which would otherwise
+    // restart the counter and make a fresh action look like a replay.
+    const value = Object.assign({ n: PAGE_ID + ":" + (++S.nonce), action }, data || {});
+    window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value, dataType: "json" }, "*");
+    return true;
+  },
+  height() { try { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: Math.max(document.documentElement.scrollHeight, 720) }, "*"); } catch (e) {} },
+};
+window.addEventListener("message", ev => {
+  const d = ev.data;
+  if (!d || d.type !== "streamlit:render") return;
+  const args = d.args || {};
+  const first = !S.host;
+  S.host = true;
+  if (first && S.screen === "menu") render();
+  onView(args.state || null);
+});
+if (window.parent !== window) host.ready();
+new ResizeObserver(() => { if (S.host) host.height(); }).observe(document.body);
+
+// ------------------------------------------------------------------ sound
+let actx = null, noiseBuf = null;
+function ac() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  actx = actx || new AC();
+  if (actx.state === "suspended") actx.resume();
+  if (!noiseBuf) {
+    noiseBuf = actx.createBuffer(1, actx.sampleRate * 1.5, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return actx;
+}
+function tone(freq, dur, type, gain, when, slideTo) {
+  if (!S.sound) return;
+  try {
+    const x = ac(); if (!x) return;
+    const t0 = x.currentTime + (when || 0);
+    const o = x.createOscillator(), g = x.createGain();
+    o.type = type || "square"; o.frequency.setValueAtTime(freq, t0);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    g.gain.setValueAtTime(gain || 0.05, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(x.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+function noise(dur, gain, when, fStart, fEnd, type) {
+  if (!S.sound) return;
+  try {
+    const x = ac(); if (!x) return;
+    const t0 = x.currentTime + (when || 0);
+    const src = x.createBufferSource(); src.buffer = noiseBuf;
+    const f = x.createBiquadFilter(); f.type = type || "lowpass";
+    f.frequency.setValueAtTime(fStart || 1200, t0);
+    f.frequency.exponentialRampToValueAtTime(fEnd || 120, t0 + dur);
+    const g = x.createGain(); g.gain.setValueAtTime(gain || 0.3, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f).connect(g).connect(x.destination);
+    src.start(t0); src.stop(t0 + dur);
+  } catch (e) {}
+}
+const sfx = {
+  click() { tone(700, 0.04, "square", 0.02); },
+  cannon() { noise(0.35, 0.5, 0, 2500, 150); tone(90, 0.25, "sine", 0.25, 0, 40); },
+  splash() { noise(0.45, 0.25, 0.05, 900, 3000, "bandpass"); tone(320, 0.12, "sine", 0.04, 0.05, 140); },
+  explode() { noise(0.7, 0.7, 0, 3000, 80); tone(70, 0.5, "sine", 0.35, 0, 30); tone(620, 0.08, "square", 0.05); },
+  sink() { noise(1.2, 0.6, 0, 1800, 60); tone(60, 1.0, "sine", 0.35, 0, 25); [660, 550, 440, 330].forEach((f, i) => tone(f, 0.25, "sawtooth", 0.06, 0.15 + i * 0.16)); },
+  incoming() { tone(1400, 0.35, "sine", 0.05, 0, 300); },
+  win() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.22, "square", 0.05, i * 0.13)); tone(1318, 0.6, "square", 0.05, 0.8); },
+  lose() { [392, 349, 311, 262].forEach((f, i) => tone(f, 0.35, "sawtooth", 0.06, i * 0.3)); noise(1.0, 0.2, 1.1, 600, 60); },
+};
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+// ------------------------------------------------------------------ helpers
+const $ = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+const esc = t => String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const fmt = n => Number(n).toLocaleString();
+const isMobile = () => window.matchMedia("(max-width: 859px)").matches;
+let toastTimer = null;
+function toast(msg, kind) {
+  const t = $("#toast");
+  t.textContent = msg; t.className = "show" + (kind ? " " + kind : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ""; }, 1600);
+}
+function hexToRgb(h) { h = h.replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+const RAMP = [[0, "#0A3E66"], [0.3, "#1E5A8A"], [0.55, "#2BB3A3"], [0.78, "#F4B942"], [1, "#FFF1B8"]];
+function belief(t) {
+  t = Math.max(0, Math.min(1, t));
+  for (let i = 0; i < RAMP.length - 1; i++) {
+    const [t0, c0] = RAMP[i], [t1, c1] = RAMP[i + 1];
+    if (t >= t0 && t <= t1) {
+      const f = (t - t0) / ((t1 - t0) || 1), a = hexToRgb(c0), b = hexToRgb(c1);
+      return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+    }
+  }
+  return RAMP[RAMP.length - 1][1];
+}
+const HERO = `<svg class="hero" viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1F7FB8"/><stop offset="1" stop-color="#0A3E66"/></linearGradient>
+<linearGradient id="hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4CDD4"/><stop offset=".6" stop-color="#7F8B94"/><stop offset="1" stop-color="#3E474F"/></linearGradient></defs>
+<rect x="0" y="100" width="520" height="50" fill="url(#sea)"/>
+<path d="M0 104 Q 30 96 60 104 T 120 104 T 180 104 T 240 104 T 300 104 T 360 104 T 420 104 T 480 104 T 540 104" fill="none" stroke="#9FD8FF" stroke-width="2" opacity=".6"/>
+<path d="M60 108 L 90 74 L 420 74 L 470 108 Z" fill="url(#hull)" stroke="#2A3238" stroke-width="2"/>
+<rect x="150" y="50" width="110" height="26" rx="3" fill="#8F9AA3" stroke="#2A3238" stroke-width="2"/>
+<rect x="175" y="30" width="55" height="22" rx="3" fill="#A6B0B8" stroke="#2A3238" stroke-width="2"/>
+<rect x="196" y="6" width="8" height="26" fill="#3C464E"/><rect x="190" y="4" width="20" height="4" fill="#3C464E"/>
+<rect x="285" y="54" width="60" height="22" rx="3" fill="#8F9AA3" stroke="#2A3238" stroke-width="2"/>
+<rect x="300" y="24" width="16" height="32" fill="#4A545C"/><rect x="296" y="20" width="24" height="6" fill="#2A3238"/>
+<g fill="#3C464E" stroke="#1E252B" stroke-width="2"><ellipse cx="120" cy="72" rx="20" ry="9"/><rect x="118" y="60" width="52" height="4"/><ellipse cx="385" cy="72" rx="20" ry="9"/><rect x="330" y="60" width="52" height="4"/></g>
+<circle cx="440" cy="40" r="6" fill="#FFC107" opacity=".9"><animate attributeName="r" values="6;9;6" dur="1.6s" repeatCount="indefinite"/></circle>
+<path d="M0 118 Q 40 110 80 118 T 160 118 T 240 118 T 320 118 T 400 118 T 480 118 T 560 118" fill="none" stroke="#5FB4EE" stroke-width="2" opacity=".5"/>
+</svg>`;
+
+// ------------------------------------------------------------------ board DOM
+function boardHTML(id) {
+  let h = `<div class="frame"><div class="board" id="${id}" role="grid"><div class="ax"></div>`;
+  for (const l of COLS) h += `<div class="ax">${l}</div>`;
+  for (let r = 0; r < SIZE; r++) {
+    h += `<div class="ax">${r + 1}</div>`;
+    for (let c = 0; c < SIZE; c++) h += `<button class="cell sea" data-r="${r}" data-c="${c}" aria-label="${label(r, c)}" type="button"></button>`;
+  }
+  return h + "</div></div>";
+}
+function cellsOf(board) { return $$(".cell", board); }
+function segHTML(ship, r, c, extraCls) {
+  const h = ship.horizontal, first = ship.cells[0], last = ship.cells[ship.cells.length - 1];
+  let part = "mid";
+  if (r === last[0] && c === last[1]) part = "bow";
+  else if (r === first[0] && c === first[1]) part = "stern";
+  return `<i class="seg ${h ? "h" : "v"} ${part} ${extraCls || ""}"></i>`;
+}
+function setCell(el, cls, inner, style) {
+  el.className = "cell " + cls;
+  el.innerHTML = inner || "";
+  el.style.cssText = style || "";
+}
+
+function paintEnemy(board, shots, opts) {
+  opts = opts || {};
+  const sunkAt = new Map();
+  for (const sh of opts.sunkShips || []) for (const [r, c] of sh.cells) sunkAt.set(key(r, c), sh);
+  for (const el of cellsOf(board)) {
+    const r = +el.dataset.r, c = +el.dataset.c, s = shots.state[r][c];
+    let cls = "sea", inner = "";
+    if (s === MISS) { cls = "miss"; inner = `<b class="peg white"></b>`; }
+    else if (s === HIT) { cls = "hit"; inner = `<b class="peg red"></b><i class="fire small"></i>`; }
+    else if (s === SUNK) {
+      cls = "sunk"; const sh = sunkAt.get(key(r, c));
+      inner = (sh ? segHTML(sh, r, c, "charred") : "") + `<b class="peg red"></b><i class="fire small"></i>`;
+    }
+    if (opts.last && opts.last[0] === r && opts.last[1] === c) cls += " last";
+    setCell(el, cls, inner);
+    el.disabled = s !== UNKNOWN || !!opts.disabled;
+  }
+  board.classList.toggle("locked", !!opts.disabled);
+}
+
+function paintOwn(board, fleet, incoming, density, last) {
+  let peak = 0;
+  if (density) { for (const row of density) for (const v of row) if (v > peak) peak = v; peak = peak || 1; }
+  for (const el of cellsOf(board)) {
+    const r = +el.dataset.r, c = +el.dataset.c, s = incoming.state[r][c], ship = fleet.shipAt(r, c);
+    let cls = "own", inner = "", style = "";
+    if (ship) {
+      if (ship.sunk) { cls = "own sunk"; inner = segHTML(ship, r, c, "charred") + `<b class="peg red"></b><i class="fire"></i>`; }
+      else if (ship.hits.has(key(r, c))) { cls = "own damage"; inner = segHTML(ship, r, c) + `<b class="peg red"></b><i class="fire"></i>`; }
+      else { cls = "own ship"; inner = segHTML(ship, r, c); }
+    } else if (s === MISS) { cls = "own miss"; inner = `<b class="peg white"></b>`; }
+    if (density && !ship && s === UNKNOWN) {
+      const t = Math.pow(density[r][c] / peak, 0.6);
+      cls += " heat"; style = `background:${belief(t)}`;
+    }
+    if (last && last[0] === r && last[1] === c) cls += " last";
+    setCell(el, cls, inner, style);
+    el.disabled = true;
+  }
+}
+
+function paintPlacement(board, fleet, pending, horiz, ghost) {
+  const valid = pending ? fleet.validCells(pending[1], horiz) : new Set();
+  let ghostShip = null;
+  if (ghost && pending && valid.has(key(ghost[0], ghost[1]))) ghostShip = new Ship(pending[0], pending[1], fleet.footprint(pending[1], ghost[0], ghost[1], horiz));
+  const ghostCells = new Set(ghostShip ? ghostShip.cells.map(([r, c]) => key(r, c)) : []);
+  for (const el of cellsOf(board)) {
+    const r = +el.dataset.r, c = +el.dataset.c, ship = fleet.shipAt(r, c), k = key(r, c);
+    let cls, inner = "";
+    if (ship) { cls = "own ship"; inner = segHTML(ship, r, c); }
+    else if (ghostCells.has(k)) { cls = "ok"; inner = segHTML(ghostShip, r, c, "ghost"); }
+    else if (valid.has(k)) cls = "ok";
+    else if (pending) cls = "bad";
+    else cls = "own";
+    setCell(el, cls, inner);
+    el.disabled = !valid.has(k);
+  }
+}
+
+// ------------------------------------------------------------------ effects
+function fxAt(board, r, c, type) {
+  const el = board && board.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+  if (!el) return;
+  const fx = document.createElement("span");
+  fx.className = "fx " + type;
+  let inner = "";
+  if (type === "boom") {
+    inner = `<i class="flash"></i><i class="smoke"></i>`;
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, d = 90 + Math.random() * 60; inner += `<i class="p" style="--dx:${Math.cos(a) * d}%;--dy:${Math.sin(a) * d}%"></i>`; }
+  } else {
+    inner = `<i class="ring"></i><i class="ring2"></i>`;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 - Math.PI / 2, d = 60 + Math.random() * 40; inner += `<i class="p" style="--dx:${Math.cos(a) * d}%;--dy:${Math.sin(a) * d - 40}%"></i>`; }
+  }
+  fx.innerHTML = inner;
+  el.appendChild(fx);
+  el.classList.add("shake");
+  setTimeout(() => { fx.remove(); el.classList.remove("shake"); }, 1100);
+}
+function sinkAnim(board, ship) {
+  if (!board || !ship) return;
+  for (const [r, c] of ship.cells) { const el = board.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); if (el) el.classList.add("sink"); }
+}
+function quake(board) { if (!board) return; board.classList.remove("quake"); void board.offsetWidth; board.classList.add("quake"); }
+function outcomeFx(board, r, c, outcome, ship, incoming) {
+  if (outcome === "miss") { fxAt(board, r, c, "splash"); sfx.splash(); }
+  else if (outcome === "hit") { fxAt(board, r, c, "boom"); sfx.explode(); buzz(incoming ? 60 : 30); if (incoming) quake(board); }
+  else { fxAt(board, r, c, "boom"); sfx.sink(); buzz([60, 40, 120]); if (incoming) quake(board); setTimeout(() => sinkAnim(board, ship), 250); }
+}
+
+function pipsHTML(fleet, reveal) {
+  return `<div class="pips">` + fleet.ships.map(s => {
+    if (s.sunk) return `<span class="pip sunk">${s.name} SUNK</span>`;
+    if (reveal && s.hits.size) return `<span class="pip dmg">${s.name} ${s.hits.size}/${s.length}</span>`;
+    return `<span class="pip ok">${s.name} ${s.length}</span>`;
+  }).join("") + `</div>`;
+}
+function enemyPipsHTML(sunkNames, ships) {
+  const sunk = new Set(sunkNames);
+  return `<div class="pips">` + ships.map(s =>
+    sunk.has(s.name) ? `<span class="pip sunk">${s.name} SUNK</span>` : `<span class="pip unk">${s.name} ${s.length}</span>`
+  ).join("") + `</div>`;
+}
+function statsHTML(items) {
+  return `<div class="stats">` + items.map(([l, v]) => `<div class="stat"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("") + `</div>`;
+}
+function logHTML(lines) { return `<div class="log">` + lines.map(m => `<div>${esc(m)}</div>`).join("") + `</div>`; }
+
+// ------------------------------------------------------------------ leaderboard
+function loadLB() { return S.host && S.lb ? S.lb : store.get("lb", []); }
+function recordLocal(entry) {
+  const lb = store.get("lb", []);
+  lb.push(entry); lb.sort((a, b) => b.score - a.score);
+  store.set("lb", lb.slice(0, 50));
+  return lb.findIndex(e => e === entry) + 1;
+}
+function lbHTML(limit) {
+  const lb = loadLB().slice(0, limit || 10);
+  if (!lb.length) return `<p class="hint">Nothing recorded yet.</p>`;
+  const me = S.name.trim().toLowerCase();
+  return `<div class="lb">` + lb.map((e, i) => {
+    const nm = e.name || e.username || "";
+    return `<div class="rw ${me && nm.toLowerCase() === me ? "me" : ""}"><span class="rk">${String(i + 1).padStart(2, "0")}</span>` +
+      `<span class="nm">${esc(nm)}</span><span class="df">${esc((e.difficulty || "").slice(0, 3))}</span><span class="sc">${fmt(e.score)}</span></div>`;
+  }).join("") + `</div>`;
+}
+
+// ------------------------------------------------------------------ commentary
+function commentary(m) {
+  const won = m.status === "won";
+  const shots = m.playerShots.shots, acc = Math.round(m.playerShots.accuracy * 100), theirs = Math.round(m.aiShots.accuracy * 100), left = m.playerFleet.shipsLeft();
+  const lines = [];
+  if (won) {
+    if (shots <= 30) lines.push(`Enemy fleet cleared in ${shots} shots, which is elite. A perfect game is 17.`);
+    else if (shots <= 45) lines.push(`Cleared in ${shots} shots at ${acc}% accuracy. That is strong play; the ADMIRAL AI averages about 43.`);
+    else lines.push(`You won in ${shots} shots at ${acc}% accuracy. Solid, but the hunt phase cost you.`);
+    if (left === 5) lines.push("Not a single ship lost. Its search never got traction on your layout.");
+    else if (left <= 2) lines.push(`You finished with ${left} ship${left === 1 ? "" : "s"} afloat. It was a turn or two from beating you.`);
+    else lines.push(`You kept ${left} ships afloat while it fired at ${theirs}% accuracy.`);
+  } else {
+    lines.push(`Your fleet went down after ${shots} of your shots at ${acc}% accuracy. It fired at ${theirs}%.`);
+    if (m.playerShots.sunkNames.length === 0) lines.push("You never sank a ship. When you land a hit, walk the hull along both axes before hunting elsewhere.");
+    else lines.push("Hunt on a checkerboard until you get a hit. Every ship is at least two long, so the off-squares are wasted shots.");
+  }
+  return lines.join(" ");
+}
+
+// ------------------------------------------------------------------ screens
+const SCREENS = {};
+function render() {
+  window.scrollTo(0, 0);
+  $("#app").innerHTML = "";
+  SCREENS[S.screen]();
+  if (S.host) host.height();
+}
+function go(screen) { document.onkeydown = null; S.screen = screen; render(); }
+function topbar(title, backLabel) {
+  return `<div class="top"><button class="btn sm" id="back">${backLabel || "MENU"}</button><span class="name">${title}</span>` +
+    `<button class="btn sm" id="snd" aria-label="Toggle sound">${S.sound ? "🔊" : "🔇"}</button></div>`;
+}
+function bindTop(backFn) {
+  const b = $("#back"); if (b) b.onclick = backFn;
+  const s = $("#snd"); if (s) s.onclick = () => { S.sound = !S.sound; store.set("sound", S.sound); s.textContent = S.sound ? "🔊" : "🔇"; sfx.click(); };
+}
+
+SCREENS.menu = function () {
+  const lb = loadLB(), best = lb[0];
+  const online = S.host;
+  $("#app").innerHTML = `
+    <h1 class="title">ARMADA</h1>
+    ${HERO}
+    <p class="sub">Battleship against an opponent that never sees your ships. It counts every fleet layout still consistent with its shots and fires where the most overlap. You can watch it think, on your own board.</p>
+    ${best ? `<div class="banner"><div class="role">FLEET COMMAND RECORD</div><div class="nm">${esc(best.name || best.username)}</div><div class="meta">${fmt(best.score)} pts · ${esc(best.difficulty || "")}</div></div>` : ""}
+    <div class="two">
+      <div>
+        <label class="lbl" for="name">Callsign</label>
+        <input type="text" id="name" maxlength="18" placeholder="Name for the leaderboard" value="${esc(S.name)}" autocomplete="off" autocapitalize="characters">
+        <div class="lbl">Opponent</div>
+        <div class="seg3" id="diff">${Object.keys(DIFFICULTIES).map(d => `<button class="btn ${S.difficulty === d ? "on" : ""}" data-d="${d}">${d}</button>`).join("")}</div>
+        <p class="hint" id="blurb">${DIFFICULTIES[S.difficulty].blurb} Score ×${DIFFICULTIES[S.difficulty].mult}.</p>
+        <div class="row" style="margin-top:14px"><button class="btn primary" id="play">⚓ Deploy Fleet</button></div>
+        <div class="lbl">Two player</div>
+        <div class="row"><button class="btn" id="create" ${online ? "" : "disabled"}>Create a room</button></div>
+        <div class="row"><input type="text" id="code" maxlength="6" placeholder="Room code, e.g. K7X2" value="${esc(S.pendingJoin)}" autocomplete="off" autocapitalize="characters" ${online ? "" : "disabled"}><button class="btn" id="join" ${online ? "" : "disabled"}>Join</button></div>
+        <p class="hint">${online ? "Online: one player creates a room, the other joins with the code or the shared link." : "Online rooms need the Streamlit host. Open the app through <b>streamlit run app.py</b>."}</p>
+        <div class="row"><button class="btn" id="hot">Two players, one device</button></div>
+        <div id="roomerr" class="hint" style="color:#FF8A80"></div>
+        <label class="check"><input type="checkbox" id="sound" ${S.sound ? "checked" : ""}> Sound effects</label>
+        <details><summary>How the AI works</summary>
+          <p>Each turn the AI is handed two things: the grid of shots it has already fired, and the lengths of your ships still afloat. It cannot see your board.</p>
+          <ol><li><strong>Enumerate</strong> every legal placement of every surviving ship, both orientations.</li>
+          <li><strong>Discard</strong> any placement that covers a known miss or overlaps a sunk hull.</li>
+          <li><strong>Count</strong> how many surviving placements cover each square, and fire at the peak.</li></ol>
+          <p>That count is the heat map on your board. Placements that explain an unresolved hit are weighted 60×, so the moment you take damage the map collapses along the two axes through that square. While your smallest ship is two long it also only fires on a checkerboard, since no ship can hide between the gaps.</p>
+        </details>
+        <details><summary>How to play</summary>
+          <p>Place your five ships, then take turns firing at the enemy grid. Tap a square to fire. A red peg with fire is a hit, a white peg is a miss, and a burning wreck is a sunk ship. Sink all five enemy ships before it sinks yours.</p>
+          <p>On a phone, switch between <strong>Enemy waters</strong> and <strong>Your waters</strong> with the two tabs above the board.</p>
+        </details>
+      </div>
+      <div>
+        <div class="lbl">Leaderboard${S.host ? (S.durable ? " (shared)" : " (server)") : " (this device)"}</div>
+        ${lbHTML(10)}
+        ${S.host && !S.durable ? `<p class="hint">Scores are on server storage and reset on restart. Add GIST_ID and GITHUB_TOKEN to make them permanent.</p>` : ""}
+      </div>
+    </div>`;
+  const nameEl = $("#name"), playBtn = $("#play"), hotBtn = $("#hot"), createBtn = $("#create"), joinBtn = $("#join"), codeEl = $("#code");
+  const sync = () => {
+    S.name = nameEl.value; store.set("name", S.name); const ok = !!S.name.trim();
+    playBtn.disabled = !ok; hotBtn.disabled = !ok;
+    createBtn.disabled = !(ok && online); joinBtn.disabled = !(ok && online && codeEl.value.trim());
+  };
+  nameEl.oninput = sync; codeEl.oninput = sync; sync();
+  nameEl.onkeydown = e => { if (e.key === "Enter" && S.name.trim()) startMatch(); };
+  $("#diff").onclick = e => {
+    const b = e.target.closest("[data-d]"); if (!b) return;
+    S.difficulty = b.dataset.d; store.set("diff", S.difficulty); sfx.click();
+    $$("#diff .btn").forEach(x => x.classList.toggle("on", x.dataset.d === S.difficulty));
+    $("#blurb").textContent = `${DIFFICULTIES[S.difficulty].blurb} Score ×${DIFFICULTIES[S.difficulty].mult}.`;
+  };
+  $("#sound").onchange = e => { S.sound = e.target.checked; store.set("sound", S.sound); if (S.sound) sfx.click(); };
+  playBtn.onclick = startMatch;
+  hotBtn.onclick = () => { sfx.click(); go("hotsetup"); };
+  createBtn.onclick = () => { sfx.click(); createBtn.disabled = true; createBtn.textContent = "Opening room…"; host.send("create", { name: S.name.trim() }); };
+  joinBtn.onclick = () => { sfx.click(); joinBtn.disabled = true; host.send("join", { name: S.name.trim(), code: codeEl.value.trim().toUpperCase() }); };
+  codeEl.onkeydown = e => { if (e.key === "Enter" && !joinBtn.disabled) joinBtn.click(); };
+  if (S.view && S.view.error) $("#roomerr").textContent = S.view.error;
+};
+
+function startMatch() {
+  sfx.click();
+  S.match = new Match(S.difficulty, (Date.now() ^ (Math.random() * 1e9)) >>> 0);
+  S.orientH = true; S.ghost = null; S.recordedRank = null; S.commentary = ""; S.tab = "enemy"; S.badge = 0; S.serverResult = null; S.busy = false;
+  go("place");
+}
+
+// ---- placement (shared by all modes)
+function placementHTML(prefix) {
+  return `
+    <div class="panel tight" id="${prefix}msg"></div>
+    <div class="row">
+      <button class="btn sm" id="${prefix}rot">⟳ Rotate</button>
+      <button class="btn sm" id="${prefix}undo">Undo</button>
+      <button class="btn sm" id="${prefix}rand">Random</button>
+      <button class="btn sm" id="${prefix}clear">Clear</button>
+    </div>
+    ${boardHTML(prefix + "board")}
+    <div id="${prefix}pips"></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="${prefix}confirm">⚓ Confirm Fleet</button></div>`;
+}
+function bindPlacement(fleet, prefix, onConfirm) {
+  const board = $("#" + prefix + "board");
+  const repaint = () => {
+    const pending = fleet.nextToPlace();
+    paintPlacement(board, fleet, pending, S.orientH, S.ghost);
+    $("#" + prefix + "rot").disabled = !pending;
+    $("#" + prefix + "undo").disabled = !fleet.ships.length;
+    $("#" + prefix + "clear").disabled = !fleet.ships.length;
+    $("#" + prefix + "confirm").disabled = !fleet.isComplete();
+    $("#" + prefix + "msg").innerHTML = pending
+      ? `Placing the <b style="color:var(--brass2)">${pending[0]}</b> (${pending[1]} squares, ${S.orientH ? "horizontal" : "vertical"}). Tap a <b style="color:var(--green)">green</b> square for its stern${isMobile() ? "" : ", or hover to preview. Press <span class='kbd'>R</span> to rotate"}.`
+      : `Fleet ready. Confirm it, or rearrange below.`;
+    $("#" + prefix + "pips").innerHTML = pipsHTML(fleet, false);
+  };
+  repaint();
+  board.onclick = e => {
+    const el = e.target.closest(".cell"); if (!el || el.disabled) return;
+    const pending = fleet.nextToPlace(); if (!pending) return;
+    if (fleet.place(pending[0], pending[1], +el.dataset.r, +el.dataset.c, S.orientH)) { sfx.click(); S.ghost = null; repaint(); }
+  };
+  board.onpointerover = e => {
+    if (e.pointerType === "touch") return;
+    const el = e.target.closest(".cell"); if (!el) return;
+    S.ghost = [+el.dataset.r, +el.dataset.c]; repaint();
+  };
+  board.onpointerleave = () => { if (S.ghost) { S.ghost = null; repaint(); } };
+  $("#" + prefix + "rot").onclick = () => { S.orientH = !S.orientH; sfx.click(); repaint(); };
+  $("#" + prefix + "undo").onclick = () => { fleet.removeLast(); sfx.click(); repaint(); };
+  $("#" + prefix + "rand").onclick = () => { fleet.placeRandom(new RNG((Math.random() * 1e9) >>> 0)); sfx.click(); repaint(); };
+  $("#" + prefix + "clear").onclick = () => { fleet.clear(); sfx.click(); repaint(); };
+  $("#" + prefix + "confirm").onclick = () => { if (fleet.isComplete()) { sfx.click(); onConfirm(); } };
+  document.onkeydown = e => { if (e.key === "r" || e.key === "R") { S.orientH = !S.orientH; repaint(); } };
+}
+
+SCREENS.place = function () {
+  $("#app").innerHTML = topbar("DEPLOY", "MENU") + placementHTML("p");
+  bindTop(() => go("menu"));
+  bindPlacement(S.match.playerFleet, "p", () => go("game"));
+};
+
+// ---- shared game layout
+function gameShell(title, enemyTitle, extraOwn) {
+  return topbar(title, "MENU") + `
+    <div id="stats"></div>
+    <div class="status you" id="status"></div>
+    <div class="tabs">
+      <button class="btn ${S.tab === "enemy" ? "on" : ""}" data-tab="enemy">${enemyTitle}</button>
+      <button class="btn ${S.tab === "own" ? "on" : ""}" data-tab="own">Your waters<span class="badge" id="badge" hidden></span></button>
+    </div>
+    <div class="boards">
+      <div class="pane ${S.tab === "enemy" ? "active" : ""}" data-pane="enemy"><h3>${enemyTitle}</h3>${boardHTML("eboard")}<div id="epips"></div></div>
+      <div class="pane ${S.tab === "own" ? "active" : ""}" data-pane="own"><h3>Your waters</h3>${boardHTML("oboard")}<div id="opips"></div>${extraOwn || ""}</div>
+    </div>
+    <div id="log"></div>
+    <div id="passrow" hidden><div class="row" style="margin-top:14px"><button class="btn primary" id="pass">Pass the device</button></div></div>
+    <div id="endrow" hidden><div class="row" style="margin-top:14px"><button class="btn primary" id="results">See results</button></div></div>`;
+}
+function setTab(tab) {
+  S.tab = tab;
+  $$(".tabs [data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  $$(".pane").forEach(p => p.classList.toggle("active", p.dataset.pane === tab));
+  if (tab === "own") { S.badge = 0; const b = $("#badge"); if (b) b.hidden = true; }
+}
+function bumpBadge() {
+  if (!isMobile() || S.tab === "own") return;
+  S.badge++; const b = $("#badge"); if (b) { b.textContent = S.badge; b.hidden = false; }
+}
+
+// ---- AI game
+SCREENS.game = function () {
+  const m = S.match;
+  $("#app").innerHTML = gameShell(m.difficulty, "Enemy waters", `
+    <div class="legend" id="legend" hidden><span>Where it thinks you are:</span><span class="bar"></span><span>likely</span></div>
+    <label class="check"><input type="checkbox" id="heat" ${S.showHeat ? "checked" : ""}> Show what the AI believes</label>
+    <div class="panel tight" id="reason" hidden></div>`);
+  bindTop(() => { if (m.status !== "playing" || confirm("Abandon this game and return to the menu?")) go("menu"); });
+  $(".tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); };
+  $("#heat").onchange = e => { S.showHeat = e.target.checked; store.set("heat", S.showHeat); paintGame(); };
+  $("#results").onclick = () => go("over");
+  $("#eboard").onclick = e => { const el = e.target.closest(".cell"); if (el && !el.disabled) playerFire(+el.dataset.r, +el.dataset.c); };
+  paintGame();
+};
+function paintGame() {
+  const m = S.match; if (!$("#eboard")) return;
+  $("#stats").innerHTML = statsHTML([["Your shots", m.playerShots.shots], ["Accuracy", Math.round(m.playerShots.accuracy * 100) + "%"], ["Their ships", m.aiFleet.shipsLeft()], ["Your ships", m.playerFleet.shipsLeft()]]);
+  const st = $("#status");
+  if (m.status === "won") { st.textContent = `Enemy fleet destroyed in ${m.playerShots.shots} shots.`; st.className = "status good"; }
+  else if (m.status === "lost") { st.textContent = "Your fleet has been sunk."; st.className = "status bad"; }
+  else if (S.busy) { st.textContent = "Enemy is choosing a target…"; st.className = "status them"; }
+  else { st.textContent = "Your turn. Tap a square in enemy waters."; st.className = "status you"; }
+  paintEnemy($("#eboard"), m.playerShots, { last: m.lastPlayerShot, disabled: S.busy || m.status !== "playing", sunkShips: m.aiFleet.ships.filter(s => s.sunk) });
+  const density = S.showHeat && m.ai.lastDensity ? m.ai.lastDensity : null;
+  paintOwn($("#oboard"), m.playerFleet, m.aiShots, density, m.lastAiShot);
+  $("#legend").hidden = !density;
+  $("#epips").innerHTML = enemyPipsHTML(m.playerShots.sunkNames, m.aiFleet.ships);
+  $("#opips").innerHTML = pipsHTML(m.playerFleet, true);
+  const reason = $("#reason");
+  if (m.ai.lastReason) {
+    reason.hidden = false;
+    reason.innerHTML = `<div class="lbl" style="margin:0 0 4px">Its reasoning</div><div class="reason">${esc(m.ai.lastReason)}` +
+      (m.ai.lastDensity ? `<small><b>${fmt(m.ai.lastPlacements)}</b> ship placements still consistent with its shots<br>confidence in its best square: <b>${(m.ai.confidence() * 100).toFixed(1)}%</b></small>` : "") + `</div>`;
+  } else reason.hidden = true;
+  $("#log").innerHTML = logHTML(m.log);
+  $("#endrow").hidden = m.status === "playing";
+}
+function playerFire(r, c) {
+  const m = S.match;
+  if (S.busy || m.status !== "playing") return;
+  const res = m.playerFire(r, c);
+  if (!res) return;
+  sfx.cannon();
+  S.busy = true;
+  paintGame();
+  setTimeout(() => {
+    outcomeFx($("#eboard"), r, c, res.outcome, res.ship, false);
+    if (res.outcome === "sunk") toast(`You sank their ${res.ship.name}!`, "good");
+  }, 180);
+  if (m.status !== "playing") { S.busy = false; setTimeout(finishMatch, 900); return; }
+  setTimeout(() => {
+    const a = m.aiFire();
+    sfx.incoming();
+    setTimeout(() => {
+      S.busy = false;
+      paintGame();
+      outcomeFx($("#oboard"), a.r, a.c, a.outcome, a.ship, true);
+      if (a.outcome === "sunk") { toast(`They sank your ${a.ship.name} at ${label(a.r, a.c)}`, "bad"); bumpBadge(); }
+      else if (a.outcome === "hit") { toast(`They hit you at ${label(a.r, a.c)}`, "bad"); bumpBadge(); }
+      if (m.status !== "playing") setTimeout(finishMatch, 900);
+    }, 350);
+  }, 1100);
+}
+function finishMatch() {
+  const m = S.match;
+  if (m.status === "won") sfx.win(); else sfx.lose();
+  S.commentary = commentary(m);
+  if (S.recordedRank === null) {
+    const entry = { name: S.name.trim().slice(0, 18) || "ANONYMOUS", score: m.score(), difficulty: m.difficulty,
+      shots: m.playerShots.shots, hits: m.playerShots.hits, acc: Math.round(m.playerShots.accuracy * 100), sunk: m.playerShots.sunkNames.length,
+      won: m.status === "won", at: new Date().toISOString() };
+    S.recordedRank = recordLocal(entry);
+    if (S.host) { S.serverResult = null; host.send("finish", Object.assign({ reason: m.ai.lastReason }, entry)); }
+  }
+  if (S.screen === "game") { paintGame(); $("#endrow").hidden = false; }
+}
+SCREENS.over = function () {
+  const m = S.match, won = m.status === "won", sr = S.serverResult;
+  $("#app").innerHTML = `
+    <div class="result ${won ? "win" : "loss"}">${won ? "VICTORY" : "FLEET LOST"}</div>
+    <p class="sub" style="margin-bottom:8px">${won ? "Every enemy ship is on the bottom." : "The enemy found your last hull."}</p>
+    <div class="two">
+      <div>
+        <div class="lbl">Score</div>
+        <div class="big">${fmt(m.score())}</div>
+        <div class="brk">${m.breakdown().map(([l, v]) => `<div class="rw"><span>${esc(l)}</span><span>${typeof v === "number" ? fmt(v) : v}</span></div>`).join("")}</div>
+        <p class="hint" id="rank" style="margin-top:8px">${S.host ? (sr ? rankText(sr) : `<span class="wait"><i></i> Transmitting score…</span>`) : `Recorded on this device at rank <b style="color:var(--brass2)">#${S.recordedRank}</b>.`}</p>
+        <div class="lbl">Analysis</div>
+        <div class="panel" id="analysis">${esc(sr && sr.commentary ? sr.commentary : S.commentary)}</div>
+      </div>
+      <div>
+        ${statsHTML([["Your shots", m.playerShots.shots], ["Their shots", m.aiShots.shots], ["Your acc.", Math.round(m.playerShots.accuracy * 100) + "%"], ["Their acc.", Math.round(m.aiShots.accuracy * 100) + "%"]])}
+        <div class="row"><button class="btn primary" id="again">Play again</button></div>
+        <div class="row"><button class="btn" id="menu">Menu</button></div>
+        <div class="lbl">Leaderboard</div>
+        <div id="lbwrap">${lbHTML(10)}</div>
+      </div>
+    </div>`;
+  $("#again").onclick = startMatch;
+  $("#menu").onclick = () => go("menu");
+};
+function rankText(sr) {
+  return sr.rank ? `Recorded on the ${S.durable ? "shared" : "server"} leaderboard at rank <b style="color:var(--brass2)">#${sr.rank}</b>.` : "Could not reach the shared board. Result kept on this device.";
+}
+
+// ---- hot seat two player
+SCREENS.hotsetup = function () {
+  $("#app").innerHTML = topbar("TWO PLAYERS", "MENU") + `
+    <p class="sub">Both commanders share this device. Each deploys a fleet in private, then you pass the device back and forth after every shot.</p>
+    <div style="max-width:440px;margin:0 auto">
+      <label class="lbl" for="n1">Commander 1</label>
+      <input type="text" id="n1" maxlength="18" value="${esc(S.name)}" placeholder="Fires first" autocomplete="off">
+      <label class="lbl" for="n2">Commander 2</label>
+      <input type="text" id="n2" maxlength="18" value="${esc(S.name2)}" placeholder="Name" autocomplete="off">
+      <div class="row" style="margin-top:16px"><button class="btn primary" id="start">Start</button></div>
+    </div>`;
+  bindTop(() => go("menu"));
+  const n1 = $("#n1"), n2 = $("#n2"), start = $("#start");
+  const sync = () => { start.disabled = !(n1.value.trim() && n2.value.trim()); };
+  n1.oninput = n2.oninput = sync; sync();
+  start.onclick = () => {
+    S.name = n1.value.trim(); S.name2 = n2.value.trim(); store.set("name", S.name); store.set("name2", S.name2);
+    S.duel = new Duel([S.name.slice(0, 18), S.name2.slice(0, 18)], (Date.now() ^ (Math.random() * 1e9)) >>> 0);
+    S.seat = 0; S.orientH = true; S.ghost = null; S.tab = "enemy"; sfx.click();
+    handoff(0, "deploy your fleet", () => go("hotplace"));
+  };
+};
+function handoff(seat, task, then) {
+  const d = S.duel;
+  const ov = document.createElement("div");
+  ov.className = "overlay";
+  ov.innerHTML = `<div class="box"><div class="lbl" style="text-align:center">Pass the device to</div><div class="who">${esc(d.names[seat])}</div>
+    <p>${esc(d.names[1 - seat])}, look away. ${esc(d.names[seat])}, tap when you are ready to ${task}.</p>
+    <button class="btn primary" id="ready">I am ${esc(d.names[seat])}</button></div>`;
+  document.body.appendChild(ov);
+  $("#ready", ov).onclick = () => { ov.remove(); sfx.click(); S.seat = seat; then(); };
+}
+SCREENS.hotplace = function () {
+  const d = S.duel, seat = S.seat;
+  $("#app").innerHTML = topbar(esc(d.names[seat]).toUpperCase(), "QUIT") + placementHTML("h");
+  bindTop(() => { if (confirm("Quit this two-player game?")) go("menu"); });
+  bindPlacement(d.fleets[seat], "h", () => {
+    document.onkeydown = null;
+    if (seat === 0) { S.orientH = true; S.ghost = null; handoff(1, "deploy your fleet", () => go("hotplace")); }
+    else handoff(0, "fire first", () => go("hotgame"));
+  });
+};
+SCREENS.hotgame = function () {
+  const d = S.duel, seat = S.seat, them = d.names[1 - seat];
+  $("#app").innerHTML = gameShell(esc(d.names[seat]).toUpperCase(), `${esc(them)}'s waters`);
+  $("#back").textContent = "QUIT";
+  bindTop(() => { if (confirm("Quit this two-player game?")) go("menu"); });
+  $(".tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); };
+  $("#results").onclick = () => go("hotover");
+  $("#pass").onclick = () => { S.tab = "enemy"; handoff(d.turn, "fire", () => go("hotgame")); };
+  $("#eboard").onclick = e => {
+    const el = e.target.closest(".cell"); if (!el || el.disabled) return;
+    const r = +el.dataset.r, c = +el.dataset.c;
+    const res = d.fire(seat, r, c);
+    if (!res) return;
+    sfx.cannon();
+    paintHot();
+    setTimeout(() => {
+      outcomeFx($("#eboard"), r, c, res.outcome, res.ship, false);
+      if (res.outcome === "sunk") toast(`You sank ${them}'s ${res.ship.name}!`, "good");
+      else if (res.outcome === "hit") toast("Direct hit!", "good");
+      else toast("Splash. Miss.");
+      if (d.status === "finished") setTimeout(sfx.win, 600);
+    }, 180);
+  };
+  paintHot();
+};
+function paintHot() {
+  const d = S.duel, seat = S.seat, them = d.names[1 - seat];
+  const fired = d.turn !== seat || d.status !== "playing";
+  $("#stats").innerHTML = statsHTML([["Your shots", d.shots[seat].shots], ["Accuracy", Math.round(d.shots[seat].accuracy * 100) + "%"], ["Their ships", d.fleets[1 - seat].shipsLeft()], ["Your ships", d.fleets[seat].shipsLeft()]]);
+  const st = $("#status");
+  if (d.status === "finished") { const w = d.winner === seat; st.textContent = w ? "You won the duel." : `${them} won the duel.`; st.className = "status " + (w ? "good" : "bad"); }
+  else if (fired) { st.textContent = `Shot taken. Pass the device to ${them}.`; st.className = "status them"; }
+  else { st.textContent = `Your turn. Tap a square in ${them}'s waters.`; st.className = "status you"; }
+  paintEnemy($("#eboard"), d.shots[seat], { last: d.last[seat], disabled: fired, sunkShips: d.fleets[1 - seat].ships.filter(s => s.sunk) });
+  paintOwn($("#oboard"), d.fleets[seat], d.shots[1 - seat], null, d.last[1 - seat]);
+  $("#epips").innerHTML = enemyPipsHTML(d.shots[seat].sunkNames, d.fleets[1 - seat].ships);
+  $("#opips").innerHTML = pipsHTML(d.fleets[seat], true);
+  $("#log").innerHTML = logHTML(d.log);
+  $("#passrow").hidden = !(fired && d.status === "playing");
+  $("#endrow").hidden = d.status !== "finished";
+}
+SCREENS.hotover = function () {
+  const d = S.duel, w = d.winner;
+  $("#app").innerHTML = `
+    <div class="result win">${esc(d.names[w]).toUpperCase()} WINS</div>
+    <p class="sub">${esc(d.names[w])} sank the fleet in ${d.shots[w].shots} shots at ${Math.round(d.shots[w].accuracy * 100)}% accuracy. ${esc(d.names[1 - w])} fired ${d.shots[1 - w].shots} shots at ${Math.round(d.shots[1 - w].accuracy * 100)}%.</p>
+    <div style="max-width:440px;margin:0 auto">
+      ${statsHTML([[esc(d.names[0]) + " shots", d.shots[0].shots], [esc(d.names[0]) + " ships", d.fleets[0].shipsLeft()], [esc(d.names[1]) + " shots", d.shots[1].shots], [esc(d.names[1]) + " ships", d.fleets[1].shipsLeft()]])}
+      <div class="row"><button class="btn primary" id="again">Rematch</button></div>
+      <div class="row"><button class="btn" id="menu">Menu</button></div>
+    </div>`;
+  $("#again").onclick = () => {
+    S.duel = new Duel([S.name.slice(0, 18), S.name2.slice(0, 18)], (Date.now() ^ (Math.random() * 1e9)) >>> 0);
+    S.orientH = true; S.ghost = null; S.tab = "enemy"; sfx.click();
+    handoff(0, "deploy your fleet", () => go("hotplace"));
+  };
+  $("#menu").onclick = () => go("menu");
+};
+
+// ---- online two player (state lives on the Streamlit server)
+function fleetFromView(ships) {
+  const f = new Fleet();
+  for (const s of ships || []) {
+    const cells = s.cells.map(([r, c]) => [r, c]);
+    const ship = new Ship(s.name, s.length, cells);
+    for (const [r, c] of s.hits || []) ship.hits.add(key(r, c));
+    const idx = f.ships.length; f.ships.push(ship);
+    for (const [r, c] of cells) f.grid[r][c] = idx;
+  }
+  return f;
+}
+function gridFromView(state, sunkNames) { const g = new ShotGrid(); g.state = state; g.sunkNames = sunkNames || []; return g; }
+const ONLINE_SCREENS = new Set(["lobby", "oplace", "ogame"]);
+function onView(v) {
+  const prev = S.view;
+  S.view = v;
+  if (!v) return;
+  if (v.lb) S.lb = v.lb;
+  S.durable = !!v.durable;
+  if (v.result && (!S.serverResult || S.serverResult.n !== v.result.n)) {
+    S.serverResult = v.result;
+    if (S.screen === "over") {
+      const r = $("#rank"), a = $("#analysis"), l = $("#lbwrap");
+      if (r) r.innerHTML = rankText(v.result);
+      if (a && v.result.commentary) a.textContent = v.result.commentary;
+      if (l) l.innerHTML = lbHTML(10);
+    }
+  }
+  if (v.pendingCode && !S.pendingJoin) { S.pendingJoin = v.pendingCode; if (S.screen === "menu") render(); }
+  const mode = v.mode;
+  if (mode === "idle") {
+    if (ONLINE_SCREENS.has(S.screen)) { S.screen = "menu"; render(); if (v.error) toast(v.error, "bad"); }
+    else if (S.screen === "menu" && v.error && (!prev || prev.error !== v.error)) {
+      const e = $("#roomerr"); if (e) e.textContent = v.error;
+      const cb = $("#create"); if (cb) { cb.disabled = false; cb.textContent = "Create a room"; }
+      const jb = $("#join"); if (jb) jb.disabled = false;
+    }
+    if (S.screen === "menu" && prev && JSON.stringify(prev.lb) !== JSON.stringify(v.lb)) render();
+    return;
+  }
+  const target = mode === "waiting" ? "lobby" : mode === "placing" ? "oplace" : "ogame";
+  if (S.screen !== target) {
+    if (!ONLINE_SCREENS.has(S.screen) && S.screen !== "menu") return; // never yank a local game away
+    if (target === "oplace") { S.oFleet = fleetFromView(v.ownShips); S.oSent = false; S.orientH = true; S.ghost = null; }
+    if (target === "ogame") { S.oPrev = null; S.tab = "enemy"; S.badge = 0; S.busy = false; }
+    S.screen = target; render();
+  } else if (target === "oplace") paintOPlaceStatus();
+  else if (target === "ogame") paintOnline();
+}
+SCREENS.lobby = function () {
+  const v = S.view;
+  const link = (() => { try { const u = new URL(window.parent.location.href); u.search = "?game=" + v.code; return u.toString(); } catch (e) { return "?game=" + v.code; } })();
+  $("#app").innerHTML = topbar("ROOM OPEN", "LEAVE") + `
+    <div class="panel" style="text-align:center"><div class="lbl" style="margin-top:0">Room code</div><div class="code">${esc(v.code)}</div>
+    <p class="hint">Give this code to your opponent, or send them the link below.</p>
+    <input type="text" id="link" readonly value="${esc(link)}" style="text-align:center;font-size:14px">
+    <div class="row"><button class="btn sm" id="copy">Copy link</button></div></div>
+    <div class="radar"></div>
+    <div class="wait"><i></i> Waiting for a second commander to join…</div>`;
+  bindTop(() => { host.send("leave"); });
+  $("#copy").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Link copied", "good"); } catch (e) { $("#link").select(); toast("Select and copy the link"); } };
+};
+SCREENS.oplace = function () {
+  const v = S.view;
+  $("#app").innerHTML = topbar("ROOM " + esc(v.code), "LEAVE") + `<div id="ostatus"></div><div id="oplacewrap">${placementHTML("o")}</div>`;
+  bindTop(() => { if (confirm("Leave this room? Your opponent wins by default.")) host.send("leave"); });
+  bindPlacement(S.oFleet, "o", () => {
+    const ships = S.oFleet.ships.map(s => [s.name, s.length, s.cells[0][0], s.cells[0][1], s.horizontal]);
+    S.oSent = true; host.send("ready", { ships }); paintOPlaceStatus();
+  });
+  paintOPlaceStatus();
+};
+function paintOPlaceStatus() {
+  const v = S.view, seat = v.seat, them = v.names[1 - seat] || "your opponent";
+  const st = $("#ostatus"); if (!st) return;
+  if ((v.ready && v.ready[seat]) || S.oSent) {
+    st.innerHTML = `<div class="panel"><div class="wait"><i></i> Fleet confirmed. Waiting for ${esc(them)} to deploy…</div></div>`;
+    const w = $("#oplacewrap"); if (w) w.hidden = true; document.onkeydown = null;
+  } else st.innerHTML = `<div class="status you">Deploy your fleet. ${esc(them)} is deploying too.</div>`;
+}
+SCREENS.ogame = function () {
+  const v = S.view, seat = v.seat, them = v.names[1 - seat] || "Opponent";
+  $("#app").innerHTML = gameShell("ROOM " + esc(v.code), `${esc(them)}'s waters`);
+  $("#back").textContent = "LEAVE";
+  bindTop(() => { if (S.view.mode === "finished" || confirm("Leave this game? Your opponent wins by default.")) host.send("leave"); });
+  $(".tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); };
+  $("#eboard").onclick = e => {
+    const el = e.target.closest(".cell"); if (!el || el.disabled || S.busy) return;
+    S.busy = true; sfx.cannon();
+    host.send("fire", { r: +el.dataset.r, c: +el.dataset.c });
+    paintOnline();
+    setTimeout(() => { if (S.busy) { S.busy = false; paintOnline(); } }, 6000);
+  };
+  paintOnline();
+};
+function paintOnline() {
+  const v = S.view; if (!v || !$("#eboard") || v.mode === "waiting" || v.mode === "placing") return;
+  const seat = v.seat, them = v.names[1 - seat] || "Opponent";
+  const own = fleetFromView(v.ownShips);
+  const shots = gridFromView(v.shots, v.enemySunk), incoming = gridFromView(v.incoming, []);
+  const enemyShips = (v.enemyShips || []).map(([n, l]) => ({ name: n, length: l }));
+  const sunkShips = (v.enemySunkShips || []).map(s => { const sh = new Ship(s.name, s.length, s.cells); for (const [r, c] of s.cells) sh.hits.add(key(r, c)); return sh; });
+  const myTurn = v.mode === "playing" && v.turn === seat;
+  const prev = S.oPrev;
+  if (prev) {
+    if (v.myShots > prev.myShots && v.lastShot) {
+      S.busy = false;
+      const [r, c] = v.lastShot, s = v.shots[r][c];
+      const outcome = s === MISS ? "miss" : s === SUNK ? "sunk" : "hit";
+      const ship = outcome === "sunk" ? sunkShips.find(sh => sh.cells.some(([rr, cc]) => rr === r && cc === c)) : null;
+      setTimeout(() => { outcomeFx($("#eboard"), r, c, outcome, ship, false); if (outcome === "sunk") toast(`You sank ${them}'s ${ship ? ship.name : "ship"}!`, "good"); else if (outcome === "hit") toast("Direct hit!", "good"); }, 120);
+    }
+    if (v.theirShots > prev.theirShots && v.theirLast) {
+      const [r, c] = v.theirLast, s = v.incoming[r][c];
+      const outcome = s === MISS ? "miss" : s === SUNK ? "sunk" : "hit";
+      const ship = own.shipAt(r, c);
+      sfx.incoming();
+      setTimeout(() => { outcomeFx($("#oboard"), r, c, outcome, ship && ship.sunk ? ship : null, true); if (outcome !== "miss") { toast(`${them} ${outcome === "sunk" ? "sank your " + ship.name : "hit you"} at ${label(r, c)}`, "bad"); bumpBadge(); } }, 300);
+    }
+    if (v.mode === "finished" && prev.mode !== "finished") setTimeout(() => (v.winner === seat ? sfx.win() : sfx.lose()), 900);
+  }
+  S.oPrev = { myShots: v.myShots, theirShots: v.theirShots, mode: v.mode };
+  $("#stats").innerHTML = statsHTML([["Your shots", v.myShots], ["Accuracy", v.myShots ? Math.round(v.myHits / v.myShots * 100) + "%" : "0%"], ["Their ships", enemyShips.length - (v.enemySunk || []).length], ["Your ships", own.shipsLeft()]]);
+  const st = $("#status");
+  if (v.mode === "finished") { const w = v.winner === seat; st.textContent = w ? "You won the duel." : `${them} won the duel.`; st.className = "status " + (w ? "good" : "bad"); }
+  else if (S.busy) { st.textContent = "Firing…"; st.className = "status them"; }
+  else if (myTurn) { st.textContent = `Your turn. Tap a square in ${them}'s waters.`; st.className = "status you"; }
+  else { st.textContent = v.opponentPresent === false ? `${them} has not been seen for a moment. Waiting…` : `Waiting for ${them} to fire…`; st.className = "status them"; }
+  paintEnemy($("#eboard"), shots, { last: v.lastShot, disabled: !myTurn || S.busy, sunkShips });
+  paintOwn($("#oboard"), own, incoming, null, v.theirLast);
+  $("#epips").innerHTML = enemyPipsHTML(v.enemySunk || [], enemyShips);
+  $("#opips").innerHTML = pipsHTML(own, true);
+  $("#log").innerHTML = logHTML(v.log || []);
+  $("#endrow").hidden = true;
+  $("#passrow").hidden = true;
+}
+
+render();
+</script>
+</body>
+</html>

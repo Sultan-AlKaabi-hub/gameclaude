@@ -51,6 +51,7 @@ class Duel:
         for fleet in self.fleets:
             fleet.place_random(rng)
         self.shots = [ShotGrid(), ShotGrid()]
+        self.last = [None, None]  # each seat's most recent shot, for the UI
         self.log = ["Room created. Waiting for a second commander."]
 
     # ---------------------------------------------------------------- seats
@@ -80,6 +81,23 @@ class Duel:
             self.status = PLACING
             self.log.append(f"{self.names[1]} joined. Both commanders deploy.")
         return seat
+
+    def set_fleet(self, seat: int, ships: list) -> bool:
+        """Replace this seat's fleet with a hand-placed layout.
+
+        `ships` is a list of (name, length, r, c, horizontal) in SHIP_TYPES
+        order. An illegal layout is rejected and the previous one kept.
+        """
+        from engine.fleet import SHIP_TYPES
+        fleet = Fleet()
+        if len(ships) != len(SHIP_TYPES):
+            return False
+        for (name, length), spec in zip(SHIP_TYPES, ships):
+            _n, _l, r, c, horizontal = spec
+            if not fleet.place(name, length, int(r), int(c), bool(horizontal)):
+                return False
+        self.fleets[seat] = fleet
+        return True
 
     def set_ready(self, seat: int) -> None:
         """Confirm this seat's fleet. The battle opens when both are ready."""
@@ -116,6 +134,7 @@ class Duel:
         target = self.fleets[1 - seat]
         outcome, ship = target.receive(r, c)
         self.shots[seat].record(r, c, outcome, ship)
+        self.last[seat] = (r, c)
 
         who = self.names[seat] or f"Player {seat + 1}"
         if outcome == "sunk" and ship:

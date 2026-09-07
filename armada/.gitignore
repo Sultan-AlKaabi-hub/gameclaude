@@ -1,0 +1,9 @@
+# Secrets must never reach the repository.
+.streamlit/secrets.toml
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+data/leaderboard.json
