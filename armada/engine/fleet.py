@@ -98,6 +98,62 @@ class Fleet:
             return True
         return False
 
+    # ----------------------------------------------- manual placement
+
+    def clear(self) -> None:
+        self.ships = []
+        self.owner_grid = [[-1] * SIZE for _ in range(SIZE)]
+
+    def can_place(self, length: int, r: int, c: int, horizontal: bool) -> bool:
+        """Would a ship of `length` fit here, bow at (r, c)?"""
+        for i in range(length):
+            rr = r + (0 if horizontal else i)
+            cc = c + (i if horizontal else 0)
+            if not (0 <= rr < SIZE and 0 <= cc < SIZE):
+                return False
+            if self.owner_grid[rr][cc] != -1:
+                return False
+        return True
+
+    def place(self, name: str, length: int, r: int, c: int, horizontal: bool) -> bool:
+        if not self.can_place(length, r, c, horizontal):
+            return False
+        cells = [
+            (r + (0 if horizontal else i), c + (i if horizontal else 0))
+            for i in range(length)
+        ]
+        index = len(self.ships)
+        self.ships.append(Ship(name=name, length=length, cells=cells))
+        for rr, cc in cells:
+            self.owner_grid[rr][cc] = index
+        return True
+
+    def remove_last(self) -> bool:
+        """Undo the most recently placed ship."""
+        if not self.ships:
+            return False
+        ship = self.ships.pop()
+        for rr, cc in ship.cells:
+            self.owner_grid[rr][cc] = -1
+        return True
+
+    def is_complete(self) -> bool:
+        return len(self.ships) == len(SHIP_TYPES)
+
+    def next_to_place(self) -> tuple | None:
+        """(name, length) of the ship awaiting placement, or None when done."""
+        if self.is_complete():
+            return None
+        return SHIP_TYPES[len(self.ships)]
+
+    def valid_cells(self, length: int, horizontal: bool) -> set:
+        return {
+            (r, c)
+            for r in range(SIZE)
+            for c in range(SIZE)
+            if self.can_place(length, r, c, horizontal)
+        }
+
     # ----------------------------------------------------------- resolution
 
     def receive(self, r: int, c: int) -> tuple[str, Ship | None]:

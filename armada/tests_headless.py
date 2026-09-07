@@ -128,6 +128,88 @@ m.ai.choose(m.ai_shots, m.player_fleet.remaining_lengths())
 ms=(time.perf_counter()-t)*1000
 check(f"density shot computed in {ms:.0f}ms", ms<250)
 
+print("\n[10] Two-player duel")
+from engine.duel import Duel, WAITING, PLACING, PLAYING, FINISHED
+d=Duel(code="TEST", seed=4)
+check("room starts waiting", d.status==WAITING)
+s0=d.claim_seat("Alice","tok-a")
+check("first seat claimed", s0==0 and d.status==WAITING)
+s1=d.claim_seat("Bob","tok-b")
+check("both seats present -> deployment phase", s1==1 and d.status==PLACING)
+check("nobody may fire during deployment", not d.can_fire(0) and d.fire(0,0,0) is False)
+d.set_ready(0)
+check("one side ready is not enough", d.status==PLACING)
+d.set_ready(1)
+check("both ready starts the battle", d.status==PLAYING)
+check("no third seat", d.claim_seat("Eve","tok-e") is None)
+check("token maps to seat", d.seat_of("tok-b")==1 and d.seat_of("nope") is None)
+
+check("seat 0 moves first", d.can_fire(0) and not d.can_fire(1))
+check("out-of-turn fire rejected", d.fire(1,0,0) is False)
+check("in-turn fire accepted", d.fire(0,0,0) is True)
+check("turn passes", d.can_fire(1) and not d.can_fire(0))
+d.fire(1,5,5)
+check("turn returns", d.can_fire(0))
+d.fire(0,0,1)
+check("duplicate square rejected", d.fire(1,5,5) is False)
+
+# Firing hits the OPPONENT's fleet, never your own.
+d2=Duel(code="T2", seed=8); d2.claim_seat("A","a"); d2.claim_seat("B","b")
+d2.set_ready(0); d2.set_ready(1)
+target=d2.fleets[1].ships[0].cells[0]
+d2.fire(0,*target)
+check("shot resolves against the opponent's fleet",
+      len(d2.fleets[1].ships[0].hits)==1 and not d2.fleets[0].ships[0].hits)
+check("attacker's shot grid records it", d2.shots[0].state[target[0]][target[1]] in (2,3))
+check("victim's own shot grid untouched", d2.shots[1].shots==0)
+
+# Sink everything on one side and confirm the win.
+d3=Duel(code="T3", seed=12); d3.claim_seat("A","a"); d3.claim_seat("B","b")
+d3.set_ready(0); d3.set_ready(1)
+cells=[c for sh in d3.fleets[1].ships for c in sh.cells]
+guard=0
+for cell in cells:
+    if d3.status!=PLAYING: break
+    if not d3.can_fire(0):
+        free=[(r,c) for r in range(SIZE) for c in range(SIZE)
+              if not d3.shots[1].already_fired(r,c)]
+        d3.fire(1,*free[0])
+    d3.fire(0,*cell); guard+=1
+check("sinking every enemy ship wins", d3.status==FINISHED and d3.winner==0)
+check("no further fire after the game ends", d3.fire(1,9,9) is False)
+
+d4=Duel(code="T4", seed=1); d4.claim_seat("A","a"); d4.claim_seat("B","b")
+d4.set_ready(0); d4.set_ready(1)
+d4.forfeit(0)
+check("forfeit hands the win to the opponent", d4.status==FINISHED and d4.winner==1)
+
+d5=Duel(code="T5", seed=2); d5.claim_seat("A","a")
+check("presence: absent opponent detected", not d5.opponent_present(0))
+d5.claim_seat("B","b"); d5.touch(1)
+check("presence: joined opponent detected", d5.opponent_present(0))
+
+print("\n[11] Manual ship placement")
+from engine.fleet import Fleet, SHIP_TYPES
+f=Fleet()
+check("starts empty, Carrier first", f.next_to_place()==("Carrier",5) and not f.is_complete())
+check("legal placement accepted", f.place("Carrier",5,0,0,True))
+check("overlapping placement rejected", not f.place("Battleship",4,0,0,True))
+check("off-board placement rejected", not f.can_place(5,0,7,True))
+check("valid_cells excludes overhang", (0,5) in f.valid_cells(5,True) and (0,6) not in f.valid_cells(5,True))
+check("vertical orientation works", f.place("Battleship",4,2,0,False))
+check("undo removes the last ship", f.remove_last() and len(f.ships)==1)
+for name,length in SHIP_TYPES[1:]:
+    ok=False
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if f.place(name,length,r,c,True): ok=True; break
+        if ok: break
+check("a full fleet can be placed by hand", f.is_complete() and f.next_to_place() is None)
+cells=[cell for sh in f.ships for cell in sh.cells]
+check("hand-placed fleet has no overlaps", len(cells)==len(set(cells)))
+f.clear()
+check("clear resets the board", len(f.ships)==0 and f.next_to_place()==("Carrier",5))
+
 print("\n"+"="*52)
 if FAILS: print(f"FAILED: {len(FAILS)} -> {FAILS}"); sys.exit(1)
 print("ALL CHECKS PASSED")
